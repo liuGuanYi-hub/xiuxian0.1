@@ -20,7 +20,7 @@ export type MapNode = {
   type: string
   label: string
   rarity: string
-  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'REWARD' | 'CLEARED'
+  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'REWARD' | 'UPGRADE' | 'CLEARED'
   nextNodeIds: string[]
 }
 
@@ -43,9 +43,10 @@ export type BuildCard = {
   rarity: string
   description: string
   effectText: string
+  upgradeLevel: number
 }
 
-export type RewardOffer = BuildCard
+export type RewardOffer = Omit<BuildCard, 'upgradeLevel'>
 
 export type GameRun = {
   id: string
@@ -56,6 +57,7 @@ export type GameRun = {
   spirit: number
   lifespan: number
   karma: number
+  spiritStones: number
   turn: number
   status: 'RUNNING' | 'DEAD' | 'ASCENDED'
   currentNodeId: string
@@ -64,6 +66,7 @@ export type GameRun = {
   map: RouteMap
   ending: Ending | null
   build: BuildCard[]
+  upgradeOptions: BuildCard[]
   rewardOffers: RewardOffer[]
   logs: string[]
 }

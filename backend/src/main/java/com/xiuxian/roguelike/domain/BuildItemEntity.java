@@ -43,6 +43,9 @@ public class BuildItemEntity {
     @Column(name = "source_node_id", length = 36)
     private String sourceNodeId;
 
+    @Column(name = "upgrade_level", nullable = false)
+    private int upgradeLevel;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -60,6 +63,7 @@ public class BuildItemEntity {
         this.description = description;
         this.effectText = effectText;
         this.sourceNodeId = sourceNodeId;
+        this.upgradeLevel = 0;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -72,4 +76,9 @@ public class BuildItemEntity {
     public String getDescription() { return description; }
     public String getEffectText() { return effectText; }
     public String getSourceNodeId() { return sourceNodeId; }
+    public int getUpgradeLevel() { return upgradeLevel; }
+
+    public void upgrade() {
+        this.upgradeLevel += 1;
+    }
 }

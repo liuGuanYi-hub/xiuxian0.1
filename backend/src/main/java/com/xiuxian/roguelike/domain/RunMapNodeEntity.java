@@ -93,6 +93,10 @@ public class RunMapNodeEntity {
         this.status = "REWARD";
     }
 
+    public void markUpgradePending() {
+        this.status = "UPGRADE";
+    }
+
     public void unlock() {
         if ("LOCKED".equals(this.status)) {
             this.status = "AVAILABLE";

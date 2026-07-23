@@ -21,6 +21,7 @@
 - 节点内容按权重抽取，支持稀有事件、可重复事件和多种特殊结局
 - 初始功法/符箓构筑，战斗、精英和秘境节点提供奖励三选一
 - 卡牌效果会影响后续战斗结算，奖励选择支持存档恢复
+- 灵石资源与休息/闭关节点卡牌升级，升级状态支持存档恢复
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
 - React 前端展示路线图、节点连线、当前事件和修仙日志
@@ -67,6 +68,8 @@ npm run dev
 | POST | `/api/game/runs/{id}/nodes/{nodeId}/enter` | 进入当前可达节点 |
 | POST | `/api/game/runs/{id}/choices` | 提交事件选择并解锁下一跳 |
 | POST | `/api/game/runs/{id}/rewards/{rewardId}/claim` | 领取一张构筑奖励并解锁路线 |
+| POST | `/api/game/runs/{id}/upgrades/{cardId}` | 在闭关节点消耗灵石升级卡牌 |
+| POST | `/api/game/runs/{id}/upgrades/skip` | 跳过本次闭关升级并解锁路线 |
 
 ## 默认数据库配置
 

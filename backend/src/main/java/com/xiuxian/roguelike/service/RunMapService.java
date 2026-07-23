@@ -129,6 +129,9 @@ public class RunMapService {
         if (floor == 0) {
             return position == 1 ? "EVENT" : "BATTLE";
         }
+        if (floor == 1 && position == 1) {
+            return "REST";
+        }
         if (floor == TOTAL_FLOORS - 1) {
             return "BOSS";
         }

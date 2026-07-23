@@ -131,6 +131,7 @@ public class GameService {
         String nextStatus = dead ? "DEAD" : (boss ? "ASCENDED" : "RUNNING");
         String endingId = dead ? "fallen_path" : (boss ? resolveEnding(run, choiceIndex, healthDelta, spiritDelta, karmaDelta) : null);
         boolean rewardPending = "RUNNING".equals(nextStatus) && buildService.givesReward(node.getType());
+        boolean upgradePending = "RUNNING".equals(nextStatus) && "REST".equals(node.getType());
 
         run.applyChoice(
                 healthDelta,
@@ -146,6 +147,9 @@ public class GameService {
         if (rewardPending) {
             run.setPendingRewardNode(node.getId());
             node.markRewardPending();
+        } else if (upgradePending) {
+            run.setPendingUpgradeNode(node.getId());
+            node.markUpgradePending();
         }
         gameRunRepository.save(run);
         runEventRepository.save(new RunEventEntity(
@@ -167,6 +171,8 @@ public class GameService {
         if (rewardPending) {
             rewardOfferRepository.saveAll(buildService.createOffers(run, node));
             runMapService.saveNode(node);
+        } else if (upgradePending) {
+            runMapService.saveNode(node);
         } else if ("RUNNING".equals(nextStatus)) {
             runMapService.completeAndUnlock(node, allNodes);
         } else {
@@ -183,6 +189,9 @@ public class GameService {
         }
         if (rewardPending) {
             transientLogs.add("战斗结束：请选择一张功法、法宝或符箓加入构筑。");
+        }
+        if (upgradePending) {
+            transientLogs.add("闭关完成：请选择一张卡牌升级，或跳过本次强化。");
         }
         if (dead) {
             transientLogs.add("你的肉身或寿元无法支撑下一步，修仙路在此断绝。");
@@ -228,6 +237,57 @@ public class GameService {
         runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
         gameRunRepository.save(run);
         return toView(run, List.of("你将“" + selected.getName() + "”纳入本局构筑，下一层路线已经解锁。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView upgradeCard(String id, String cardId) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        String pendingNodeId = run.getPendingUpgradeNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有待升级的卡牌。");
+        }
+
+        BuildItemEntity item = buildItemRepository.findByIdAndRunId(cardId, run.getId())
+                .orElseThrow(() -> new IllegalArgumentException("找不到这张构筑卡牌。"));
+        int cost = buildService.upgradeCost(item.getUpgradeLevel());
+        if (run.getSpiritStones() < cost) {
+            throw new IllegalStateException("灵石不足，需要 " + cost + " 灵石。");
+        }
+
+        BuildCatalog.CardDefinition card = BuildCatalog.get(item.getCardId());
+        run.spendSpiritStones(cost);
+        run.applyBuildReward(
+                buildService.upgradeHealthReward(card),
+                buildService.upgradeSpiritReward(card),
+                buildService.upgradeLifespanReward(card),
+                buildService.upgradeKarmaReward(card)
+        );
+        item.upgrade();
+        buildItemRepository.save(item);
+
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), pendingNodeId);
+        run.clearPendingUpgrade();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        gameRunRepository.save(run);
+        return toView(run, List.of("你消耗 " + cost + " 灵石，将“" + item.getName() + "”强化至 Lv."
+                + (item.getUpgradeLevel() + 1) + "。下一层路线已经解锁。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView skipUpgrade(String id) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        String pendingNodeId = run.getPendingUpgradeNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有待处理的闭关强化。");
+        }
+
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), pendingNodeId);
+        run.clearPendingUpgrade();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        gameRunRepository.save(run);
+        return toView(run, List.of("你结束闭关，保留灵石与当前构筑。下一层路线已经解锁。"));
     }
 
     private GameRunEntity findRun(String id) {
@@ -302,6 +362,9 @@ public class GameService {
         RouteMapView map = new RouteMapView(10, nodes);
         EndingView ending = run.getEndingId() == null ? null : toEndingView(run.getEndingId());
         List<BuildCardView> build = buildService.toViews(run.getId());
+        List<BuildCardView> upgradeOptions = run.getPendingUpgradeNodeId() == null
+                ? List.of()
+                : buildService.toUpgradeViews(run.getId());
         List<RewardOfferView> rewardOffers = rewardOfferRepository
                 .findByRunIdAndStatusOrderByCreatedAtAsc(run.getId(), "PENDING")
                 .stream()
@@ -310,10 +373,10 @@ public class GameService {
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
-                run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(),
+                run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(), run.getSpiritStones(),
                 run.getTurn(), run.getStatus(), run.getCurrentNodeId(), run.getCurrentFloor(),
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
-                map, ending, build, rewardOffers, logs
+                map, ending, build, upgradeOptions, rewardOffers, logs
         );
     }
 

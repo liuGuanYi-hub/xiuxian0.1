@@ -86,6 +86,34 @@ class GameControllerTest {
     }
 
     @Test
+    void restNodeCanUpgradeCardBeforeUnlockingRoute() throws Exception {
+        JsonNode started = objectMapper.readTree(startRun());
+        String runId = started.get("id").asText();
+        JsonNode restNode = firstNodeByType(started.get("map").get("nodes"), "REST");
+        JsonNode parent = firstNodePointingTo(started.get("map").get("nodes"), restNode.get("id").asText());
+        assertTrue(parent != null, "固定的休息节点应该有上一跳");
+
+        JsonNode current = enterNode(runId, parent.get("id").asText());
+        current = objectMapper.readTree(choose(runId, 0, "upgrade-prep-1"));
+        if (current.get("rewardOffers").size() > 0) {
+            current = claimFirstReward(runId, current);
+        }
+        assertEquals("AVAILABLE", findNode(current.get("map").get("nodes"), restNode.get("id").asText()).get("status").asText());
+
+        current = enterNode(runId, restNode.get("id").asText());
+        current = objectMapper.readTree(choose(runId, 0, "upgrade-rest-1"));
+        assertTrue(current.get("build").size() >= 2, "starter 构筑至少应保留两张卡牌");
+        assertEquals(current.get("build").size(), current.get("upgradeOptions").size());
+        assertEquals("UPGRADE", findNode(current.get("map").get("nodes"), restNode.get("id").asText()).get("status").asText());
+
+        JsonNode upgraded = upgradeFirstCard(runId, current);
+        assertEquals(35, upgraded.get("spiritStones").asInt());
+        assertEquals(1, upgraded.get("build").get(0).get("upgradeLevel").asInt());
+        assertEquals(0, upgraded.get("upgradeOptions").size());
+        assertEquals("CLEARED", findNode(upgraded.get("map").get("nodes"), restNode.get("id").asText()).get("status").asText());
+    }
+
+    @Test
     void duplicateRequestIdDoesNotAdvanceTheRunTwice() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
@@ -129,6 +157,10 @@ class GameControllerTest {
                 current = claimFirstReward(runId, current);
                 continue;
             }
+            if (current.get("upgradeOptions").size() > 0) {
+                current = skipUpgrade(runId);
+                continue;
+            }
             if (!current.get("currentNodeId").asText().isBlank()) {
                 current = objectMapper.readTree(choose(runId, 2, UUID.randomUUID().toString()));
                 continue;
@@ -152,7 +184,9 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.status").value("RUNNING"))
                 .andExpect(jsonPath("$.event.choices.length()").value(0))
                 .andExpect(jsonPath("$.map.nodes.length()").value(28))
+                .andExpect(jsonPath("$.spiritStones").value(60))
                 .andExpect(jsonPath("$.build.length()").value(2))
+                .andExpect(jsonPath("$.upgradeOptions.length()").value(0))
                 .andExpect(jsonPath("$.rewardOffers.length()").value(0))
                 .andReturn();
         return result.getResponse().getContentAsString();
@@ -179,6 +213,28 @@ class GameControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
+    private JsonNode enterNode(String runId, String nodeId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/nodes/{nodeId}/enter", runId, nodeId))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode upgradeFirstCard(String runId, JsonNode current) throws Exception {
+        JsonNode card = current.get("upgradeOptions").get(0);
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/upgrades/{cardId}", runId, card.get("id").asText()))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode skipUpgrade(String runId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/upgrades/skip", runId))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
     private String choose(String runId, int choiceIndex, String requestId) throws Exception {
         return mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -201,6 +257,33 @@ class GameControllerTest {
     private JsonNode firstNode(JsonNode nodes, int floor) {
         for (JsonNode node : nodes) {
             if (node.get("floor").asInt() == floor) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode firstNodeByType(JsonNode nodes, String type) {
+        for (JsonNode node : nodes) {
+            if (type.equals(node.get("type").asText())) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode firstNodePointingTo(JsonNode nodes, String targetId) {
+        for (JsonNode node : nodes) {
+            if (node.get("floor").asInt() == 0 && node.get("nextNodeIds").toString().contains(targetId)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode findNode(JsonNode nodes, String nodeId) {
+        for (JsonNode node : nodes) {
+            if (nodeId.equals(node.get("id").asText())) {
                 return node;
             }
         }

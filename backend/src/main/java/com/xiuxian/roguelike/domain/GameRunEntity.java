@@ -37,6 +37,9 @@ public class GameRunEntity {
     @Column(nullable = false)
     private int karma;
 
+    @Column(name = "spirit_stones", nullable = false)
+    private int spiritStones;
+
     @Column(nullable = false)
     private long seed;
 
@@ -61,6 +64,9 @@ public class GameRunEntity {
     @Column(name = "pending_reward_node_id", length = 36)
     private String pendingRewardNodeId;
 
+    @Column(name = "pending_upgrade_node_id", length = 36)
+    private String pendingUpgradeNodeId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -82,6 +88,7 @@ public class GameRunEntity {
         this.spirit = 30;
         this.lifespan = 80;
         this.karma = 0;
+        this.spiritStones = 60;
         this.seed = seed;
         this.turn = 0;
         this.status = "RUNNING";
@@ -90,6 +97,7 @@ public class GameRunEntity {
         this.currentFloor = 0;
         this.endingId = null;
         this.pendingRewardNodeId = null;
+        this.pendingUpgradeNodeId = null;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
@@ -102,6 +110,7 @@ public class GameRunEntity {
     public int getSpirit() { return spirit; }
     public int getLifespan() { return lifespan; }
     public int getKarma() { return karma; }
+    public int getSpiritStones() { return spiritStones; }
     public long getSeed() { return seed; }
     public int getTurn() { return turn; }
     public String getStatus() { return status; }
@@ -110,6 +119,7 @@ public class GameRunEntity {
     public int getCurrentFloor() { return currentFloor; }
     public String getEndingId() { return endingId; }
     public String getPendingRewardNodeId() { return pendingRewardNodeId; }
+    public String getPendingUpgradeNodeId() { return pendingUpgradeNodeId; }
 
     public void applyChoice(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta,
                             String nextEventId, String nextRealm, String nextStatus, String nextEndingId) {
@@ -153,6 +163,24 @@ public class GameRunEntity {
         this.spirit = Math.max(0, this.spirit + spiritDelta);
         this.lifespan = Math.max(0, this.lifespan + lifespanDelta);
         this.karma += karmaDelta;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setPendingUpgradeNode(String nodeId) {
+        this.pendingUpgradeNodeId = nodeId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void clearPendingUpgrade() {
+        this.pendingUpgradeNodeId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void spendSpiritStones(int amount) {
+        if (amount < 0 || this.spiritStones < amount) {
+            throw new IllegalArgumentException("灵石不足。");
+        }
+        this.spiritStones -= amount;
         this.updatedAt = LocalDateTime.now();
     }
 }

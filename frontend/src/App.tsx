@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowRight, Compass, Download, Flame, Heart, Hourglass, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
-import { chooseEvent, claimReward, enterNode, restoreRun, startRun } from './api'
+import { ArrowRight, Coins, Compass, Download, Flame, Heart, Hourglass, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
+import { chooseEvent, claimReward, enterNode, restoreRun, skipUpgrade, startRun, upgradeCard } from './api'
 import type { GameRun, MapNode, RewardOffer } from './types'
 
 const origins = [
@@ -77,6 +77,32 @@ function App() {
       setRun(await claimReward(run.id, rewardId))
     } catch (err) {
       setError(err instanceof Error ? err.message : '奖励领取失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function upgradeBuildCard(cardId: string) {
+    if (!run || run.status !== 'RUNNING' || run.upgradeOptions.length === 0) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await upgradeCard(run.id, cardId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '卡牌升级失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function skipBuildUpgrade() {
+    if (!run || run.status !== 'RUNNING' || run.upgradeOptions.length === 0) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await skipUpgrade(run.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '无法结束闭关。')
     } finally {
       setLoading(false)
     }
@@ -188,6 +214,7 @@ function App() {
         <Stat icon={<Flame size={17} />} label="灵力" value={run.spirit} color="blue" />
         <Stat icon={<Hourglass size={17} />} label="寿元" value={run.lifespan} color="gold" />
         <Stat icon={<Sparkles size={17} />} label="因果" value={run.karma} color="purple" />
+        <Stat icon={<Coins size={17} />} label="灵石" value={run.spiritStones} color="cyan" />
       </section>
 
       <BuildPanel cards={run.build} />
@@ -196,7 +223,17 @@ function App() {
         <RewardPanel offers={run.rewardOffers} loading={loading} onClaim={(rewardId) => void claimBuildReward(rewardId)} />
       )}
 
-      {run.rewardOffers.length === 0 && !activeNode && (
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length > 0 && (
+        <UpgradePanel
+          cards={run.upgradeOptions}
+          spiritStones={run.spiritStones}
+          loading={loading}
+          onUpgrade={(cardId) => void upgradeBuildCard(cardId)}
+          onSkip={() => void skipBuildUpgrade()}
+        />
+      )}
+
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !activeNode && (
         <RouteMapPanel run={run} loading={loading} onEnter={(nodeId) => void enter(nodeId)} />
       )}
 
@@ -300,6 +337,7 @@ function BuildPanel({ cards }: { cards: GameRun['build'] }) {
           <article className={'build-card ' + card.rarity} key={card.id}>
             <div className="build-card-topline">
               <span className="card-category">{card.category}</span>
+              <span className="card-level">Lv.{card.upgradeLevel + 1}</span>
               <span className={'rarity-badge ' + card.rarity}>{card.rarity}</span>
             </div>
             <strong>{card.name}</strong>
@@ -307,6 +345,50 @@ function BuildPanel({ cards }: { cards: GameRun['build'] }) {
           </article>
         ))}
       </div>
+    </section>
+  )
+}
+
+function UpgradePanel({ cards, spiritStones, loading, onUpgrade, onSkip }: {
+  cards: GameRun['upgradeOptions']
+  spiritStones: number
+  loading: boolean
+  onUpgrade: (cardId: string) => void
+  onSkip: () => void
+}) {
+  return (
+    <section className="upgrade-panel">
+      <div className="upgrade-heading">
+        <div>
+          <p className="event-kicker">休息闭关 · 卡牌强化</p>
+          <h2>选择一张卡牌升级</h2>
+        </div>
+        <span className="upgrade-stones"><Coins size={14} />剩余 {spiritStones} 灵石</span>
+      </div>
+      <p className="route-description">升级会提高卡牌的战斗加成，并根据卡牌类型返还少量属性。也可以跳过，把灵石留给之后的坊市。</p>
+      <div className="upgrade-grid">
+        {cards.map((card) => {
+          const cost = 25 + card.upgradeLevel * 15
+          return (
+            <button
+              className="upgrade-card"
+              disabled={loading || spiritStones < cost}
+              key={card.id}
+              onClick={() => onUpgrade(card.id)}
+              type="button"
+            >
+              <div className="reward-card-topline">
+                <span>{card.category} · Lv.{card.upgradeLevel + 1}</span>
+                <span className={'rarity-badge ' + card.rarity}>{card.rarity}</span>
+              </div>
+              <strong>{card.name}</strong>
+              <small>{card.effectText}</small>
+              <span className="upgrade-action"><Coins size={14} />{cost} 灵石 · 强化</span>
+            </button>
+          )
+        })}
+      </div>
+      <button className="ghost-button upgrade-skip" disabled={loading} onClick={onSkip} type="button">暂不升级，继续赶路</button>
     </section>
   )
 }

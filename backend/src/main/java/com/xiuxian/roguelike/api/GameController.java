@@ -49,4 +49,14 @@ public class GameController {
     public GameRunView claimReward(@PathVariable String id, @PathVariable String rewardId) {
         return gameService.claimReward(id, rewardId);
     }
+
+    @PostMapping("/{id}/upgrades/{cardId}")
+    public GameRunView upgradeCard(@PathVariable String id, @PathVariable String cardId) {
+        return gameService.upgradeCard(id, cardId);
+    }
+
+    @PostMapping("/{id}/upgrades/skip")
+    public GameRunView skipUpgrade(@PathVariable String id) {
+        return gameService.skipUpgrade(id);
+    }
 }

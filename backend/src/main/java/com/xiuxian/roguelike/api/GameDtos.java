@@ -42,7 +42,7 @@ public final class GameDtos {
     }
 
     public record BuildCardView(String id, String cardId, String category, String name,
-                                String rarity, String description, String effectText) {
+                                String rarity, String description, String effectText, int upgradeLevel) {
     }
 
     public record RewardOfferView(String id, String cardId, String category, String name,
@@ -58,6 +58,7 @@ public final class GameDtos {
             int spirit,
             int lifespan,
             int karma,
+            int spiritStones,
             int turn,
             String status,
             String currentNodeId,
@@ -66,6 +67,7 @@ public final class GameDtos {
             RouteMapView map,
             EndingView ending,
             List<BuildCardView> build,
+            List<BuildCardView> upgradeOptions,
             List<RewardOfferView> rewardOffers,
             List<String> logs
     ) {

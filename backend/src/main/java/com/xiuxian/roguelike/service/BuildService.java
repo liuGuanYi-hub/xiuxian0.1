@@ -37,11 +37,32 @@ public class BuildService {
 
     public List<BuildCardView> toViews(String runId) {
         return getBuild(runId).stream()
-                .map(item -> new BuildCardView(
-                        item.getId(), item.getCardId(), item.getCategory(), item.getName(),
-                        item.getRarity(), item.getDescription(), item.getEffectText()
-                ))
+                .map(this::toView)
                 .toList();
+    }
+
+    public List<BuildCardView> toUpgradeViews(String runId) {
+        return toViews(runId);
+    }
+
+    public int upgradeCost(int currentLevel) {
+        return 25 + currentLevel * 15;
+    }
+
+    public int upgradeHealthReward(BuildCatalog.CardDefinition card) {
+        return card.healthOnClaim() == 0 ? 0 : Math.max(2, card.healthOnClaim() / 2);
+    }
+
+    public int upgradeSpiritReward(BuildCatalog.CardDefinition card) {
+        return card.spiritOnClaim() == 0 ? 0 : Math.max(2, card.spiritOnClaim() / 2);
+    }
+
+    public int upgradeLifespanReward(BuildCatalog.CardDefinition card) {
+        return card.lifespanOnClaim() == 0 ? 0 : Math.max(1, card.lifespanOnClaim() / 2);
+    }
+
+    public int upgradeKarmaReward(BuildCatalog.CardDefinition card) {
+        return card.karmaOnClaim() == 0 ? 0 : Math.max(1, card.karmaOnClaim() / 2);
     }
 
     public List<RewardOfferEntity> createOffers(GameRunEntity run, RunMapNodeEntity node) {
@@ -78,8 +99,12 @@ public class BuildService {
         int spirit = 0;
         for (BuildItemEntity item : getBuild(runId)) {
             BuildCatalog.CardDefinition card = BuildCatalog.get(item.getCardId());
-            health += card.battleHealthBonus();
-            spirit += card.battleSpiritBonus();
+            int multiplier = item.getUpgradeLevel() + 1;
+            health += card.battleHealthBonus() * multiplier;
+            spirit += card.battleSpiritBonus() * multiplier;
+            if (item.getUpgradeLevel() > 0 && card.battleHealthBonus() == 0 && card.battleSpiritBonus() == 0) {
+                spirit += item.getUpgradeLevel();
+            }
         }
         return new BuildModifier(health, spirit);
     }
@@ -102,6 +127,17 @@ public class BuildService {
         return new RewardOfferView(
                 offer.getId(), offer.getCardId(), offer.getCategory(), offer.getName(),
                 offer.getRarity(), offer.getDescription(), offer.getEffectText()
+        );
+    }
+
+    private BuildCardView toView(BuildItemEntity item) {
+        String effectText = item.getEffectText();
+        if (item.getUpgradeLevel() > 0) {
+            effectText += " · 强化等级 " + item.getUpgradeLevel();
+        }
+        return new BuildCardView(
+                item.getId(), item.getCardId(), item.getCategory(), item.getName(),
+                item.getRarity(), item.getDescription(), effectText, item.getUpgradeLevel()
         );
     }
 

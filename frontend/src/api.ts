@@ -40,6 +40,18 @@ export function claimReward(runId: string, rewardId: string) {
   })
 }
 
+export function upgradeCard(runId: string, cardId: string) {
+  return request<GameRun>(`/game/runs/${runId}/upgrades/${cardId}`, {
+    method: 'POST',
+  })
+}
+
+export function skipUpgrade(runId: string) {
+  return request<GameRun>(`/game/runs/${runId}/upgrades/skip`, {
+    method: 'POST',
+  })
+}
+
 export function restoreRun(runId: string) {
   return request<GameRun>(`/game/runs/${encodeURIComponent(runId.trim())}`)
 }
