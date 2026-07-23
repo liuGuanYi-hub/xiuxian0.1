@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ArrowRight, Compass, Download, Flame, Heart, Hourglass, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
-import { chooseEvent, enterNode, restoreRun, startRun } from './api'
-import type { GameRun, MapNode } from './types'
+import { chooseEvent, claimReward, enterNode, restoreRun, startRun } from './api'
+import type { GameRun, MapNode, RewardOffer } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -64,6 +64,19 @@ function App() {
       setRun(await chooseEvent(run.id, choiceIndex))
     } catch (err) {
       setError(err instanceof Error ? err.message : '选择未能送达。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function claimBuildReward(rewardId: string) {
+    if (!run || run.status !== 'RUNNING' || run.rewardOffers.length === 0) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await claimReward(run.id, rewardId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '奖励领取失败。')
     } finally {
       setLoading(false)
     }
@@ -177,7 +190,15 @@ function App() {
         <Stat icon={<Sparkles size={17} />} label="因果" value={run.karma} color="purple" />
       </section>
 
-      {!activeNode && <RouteMapPanel run={run} loading={loading} onEnter={(nodeId) => void enter(nodeId)} />}
+      <BuildPanel cards={run.build} />
+
+      {run.rewardOffers.length > 0 && (
+        <RewardPanel offers={run.rewardOffers} loading={loading} onClaim={(rewardId) => void claimBuildReward(rewardId)} />
+      )}
+
+      {run.rewardOffers.length === 0 && !activeNode && (
+        <RouteMapPanel run={run} loading={loading} onEnter={(nodeId) => void enter(nodeId)} />
+      )}
 
       {activeNode && (
         <section className="event-card">
@@ -262,6 +283,58 @@ function RouteMapPanel({ run, loading, onEnter }: { run: GameRun; loading: boole
         <span><i className="legend-dot cleared" />已完成</span>
         <span><i className="legend-dot locked" />未解锁</span>
         <span><i className="legend-dot boss" />Boss</span>
+      </div>
+    </section>
+  )
+}
+
+function BuildPanel({ cards }: { cards: GameRun['build'] }) {
+  return (
+    <section className="build-card-panel">
+      <div className="section-heading">
+        <span>本局构筑 <small className="build-count">{cards.length} 张</small></span>
+        <small>功法 · 法宝 · 符箓</small>
+      </div>
+      <div className="build-card-list">
+        {cards.map((card) => (
+          <article className={'build-card ' + card.rarity} key={card.id}>
+            <div className="build-card-topline">
+              <span className="card-category">{card.category}</span>
+              <span className={'rarity-badge ' + card.rarity}>{card.rarity}</span>
+            </div>
+            <strong>{card.name}</strong>
+            <small>{card.effectText}</small>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function RewardPanel({ offers, loading, onClaim }: { offers: RewardOffer[]; loading: boolean; onClaim: (rewardId: string) => void }) {
+  return (
+    <section className="reward-panel">
+      <div className="reward-heading">
+        <div>
+          <p className="event-kicker">战斗结算 · 构筑奖励</p>
+          <h2>选择一张加入本局</h2>
+        </div>
+        <span className="reward-tip">其余奖励将消散</span>
+      </div>
+      <p className="route-description">战斗、精英和秘境节点会改变你的卡组。选牌后路线才会继续向下一层推进。</p>
+      <div className="reward-grid">
+        {offers.map((offer) => (
+          <button className={'reward-card ' + offer.rarity} disabled={loading} key={offer.id} onClick={() => onClaim(offer.id)} type="button">
+            <div className="reward-card-topline">
+              <span>{offer.category}</span>
+              <span className={'rarity-badge ' + offer.rarity}>{offer.rarity}</span>
+            </div>
+            <strong>{offer.name}</strong>
+            <p>{offer.description}</p>
+            <small>{offer.effectText}</small>
+            <span className="reward-claim"><ArrowRight size={15} />纳入构筑</span>
+          </button>
+        ))}
       </div>
     </section>
   )

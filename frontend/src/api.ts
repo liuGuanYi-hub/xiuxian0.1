@@ -34,6 +34,12 @@ export function enterNode(runId: string, nodeId: string) {
   })
 }
 
+export function claimReward(runId: string, rewardId: string) {
+  return request<GameRun>(`/game/runs/${runId}/rewards/${rewardId}/claim`, {
+    method: 'POST',
+  })
+}
+
 export function restoreRun(runId: string) {
   return request<GameRun>(`/game/runs/${encodeURIComponent(runId.trim())}`)
 }

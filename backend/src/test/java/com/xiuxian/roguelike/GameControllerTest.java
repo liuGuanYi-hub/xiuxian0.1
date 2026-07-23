@@ -68,6 +68,24 @@ class GameControllerTest {
     }
 
     @Test
+    void battleChoiceCreatesThreeRewardsAndClaimAddsCard() throws Exception {
+        JsonNode startedRun = objectMapper.readTree(startRun());
+        String runId = startedRun.get("id").asText();
+        enterFirstAvailable(runId, startedRun);
+
+        JsonNode afterBattle = objectMapper.readTree(choose(runId, 0, "reward-test-1"));
+        assertEquals(1, afterBattle.get("turn").asInt());
+        assertEquals(3, afterBattle.get("rewardOffers").size());
+        assertEquals(2, afterBattle.get("build").size());
+        assertEquals("REWARD", firstNode(afterBattle.get("map").get("nodes"), 0).get("status").asText());
+
+        JsonNode claimed = claimFirstReward(runId, afterBattle);
+        assertEquals(0, claimed.get("rewardOffers").size());
+        assertEquals(3, claimed.get("build").size());
+        assertTrue(countByStatus(claimed.get("map").get("nodes"), "AVAILABLE") > 0);
+    }
+
+    @Test
     void duplicateRequestIdDoesNotAdvanceTheRunTwice() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
@@ -106,7 +124,11 @@ class GameControllerTest {
         JsonNode current = objectMapper.readTree(startRun());
         String runId = current.get("id").asText();
 
-        for (int decision = 0; decision < 24 && "RUNNING".equals(current.get("status").asText()); decision++) {
+        for (int decision = 0; decision < 32 && "RUNNING".equals(current.get("status").asText()); decision++) {
+            if (current.get("rewardOffers").size() > 0) {
+                current = claimFirstReward(runId, current);
+                continue;
+            }
             if (!current.get("currentNodeId").asText().isBlank()) {
                 current = objectMapper.readTree(choose(runId, 2, UUID.randomUUID().toString()));
                 continue;
@@ -130,6 +152,8 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.status").value("RUNNING"))
                 .andExpect(jsonPath("$.event.choices.length()").value(0))
                 .andExpect(jsonPath("$.map.nodes.length()").value(28))
+                .andExpect(jsonPath("$.build.length()").value(2))
+                .andExpect(jsonPath("$.rewardOffers.length()").value(0))
                 .andReturn();
         return result.getResponse().getContentAsString();
     }
@@ -141,6 +165,16 @@ class GameControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentNodeId").value(node.get("id").asText()))
                 .andExpect(jsonPath("$.event.choices.length()").value(3))
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode claimFirstReward(String runId, JsonNode current) throws Exception {
+        JsonNode reward = current.get("rewardOffers").get(0);
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/rewards/{rewardId}/claim",
+                        runId, reward.get("id").asText()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rewardOffers.length()").value(0))
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
@@ -158,6 +192,15 @@ class GameControllerTest {
     private JsonNode firstAvailable(JsonNode nodes) {
         for (JsonNode node : nodes) {
             if ("AVAILABLE".equals(node.get("status").asText())) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode firstNode(JsonNode nodes, int floor) {
+        for (JsonNode node : nodes) {
+            if (node.get("floor").asInt() == floor) {
                 return node;
             }
         }

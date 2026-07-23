@@ -41,6 +41,14 @@ public final class GameDtos {
     public record EndingView(String id, String title, String description) {
     }
 
+    public record BuildCardView(String id, String cardId, String category, String name,
+                                String rarity, String description, String effectText) {
+    }
+
+    public record RewardOfferView(String id, String cardId, String category, String name,
+                                  String rarity, String description, String effectText) {
+    }
+
     public record GameRunView(
             String id,
             String playerName,
@@ -57,6 +65,8 @@ public final class GameDtos {
             EventView event,
             RouteMapView map,
             EndingView ending,
+            List<BuildCardView> build,
+            List<RewardOfferView> rewardOffers,
             List<String> logs
     ) {
     }

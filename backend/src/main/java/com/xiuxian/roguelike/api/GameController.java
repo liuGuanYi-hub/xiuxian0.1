@@ -44,4 +44,9 @@ public class GameController {
     public GameRunView enterNode(@PathVariable String id, @PathVariable String nodeId) {
         return gameService.enterNode(id, nodeId);
     }
+
+    @PostMapping("/{id}/rewards/{rewardId}/claim")
+    public GameRunView claimReward(@PathVariable String id, @PathVariable String rewardId) {
+        return gameService.claimReward(id, rewardId);
+    }
 }

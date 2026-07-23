@@ -20,7 +20,7 @@ export type MapNode = {
   type: string
   label: string
   rarity: string
-  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'CLEARED'
+  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'REWARD' | 'CLEARED'
   nextNodeIds: string[]
 }
 
@@ -34,6 +34,18 @@ export type Ending = {
   title: string
   description: string
 }
+
+export type BuildCard = {
+  id: string
+  cardId: string
+  category: string
+  name: string
+  rarity: string
+  description: string
+  effectText: string
+}
+
+export type RewardOffer = BuildCard
 
 export type GameRun = {
   id: string
@@ -51,5 +63,7 @@ export type GameRun = {
   event: GameEvent
   map: RouteMap
   ending: Ending | null
+  build: BuildCard[]
+  rewardOffers: RewardOffer[]
   logs: string[]
 }

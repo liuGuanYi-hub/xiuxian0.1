@@ -2,16 +2,22 @@ package com.xiuxian.roguelike.service;
 
 import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceView;
+import com.xiuxian.roguelike.api.GameDtos.BuildCardView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
 import com.xiuxian.roguelike.api.GameDtos.EventView;
 import com.xiuxian.roguelike.api.GameDtos.GameRunView;
 import com.xiuxian.roguelike.api.GameDtos.MapNodeView;
+import com.xiuxian.roguelike.api.GameDtos.RewardOfferView;
 import com.xiuxian.roguelike.api.GameDtos.RouteMapView;
 import com.xiuxian.roguelike.api.GameDtos.StartRunRequest;
+import com.xiuxian.roguelike.domain.BuildItemEntity;
 import com.xiuxian.roguelike.domain.GameRunEntity;
+import com.xiuxian.roguelike.domain.RewardOfferEntity;
 import com.xiuxian.roguelike.domain.RunEventEntity;
 import com.xiuxian.roguelike.domain.RunMapNodeEntity;
+import com.xiuxian.roguelike.repository.BuildItemRepository;
 import com.xiuxian.roguelike.repository.GameRunRepository;
+import com.xiuxian.roguelike.repository.RewardOfferRepository;
 import com.xiuxian.roguelike.repository.RunEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -27,13 +33,20 @@ public class GameService {
 
     private final GameRunRepository gameRunRepository;
     private final RunEventRepository runEventRepository;
+    private final BuildItemRepository buildItemRepository;
+    private final RewardOfferRepository rewardOfferRepository;
     private final RunMapService runMapService;
+    private final BuildService buildService;
 
     public GameService(GameRunRepository gameRunRepository, RunEventRepository runEventRepository,
-                       RunMapService runMapService) {
+                       BuildItemRepository buildItemRepository, RewardOfferRepository rewardOfferRepository,
+                       RunMapService runMapService, BuildService buildService) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
+        this.buildItemRepository = buildItemRepository;
+        this.rewardOfferRepository = rewardOfferRepository;
         this.runMapService = runMapService;
+        this.buildService = buildService;
     }
 
     @Transactional
@@ -48,6 +61,7 @@ public class GameService {
                 "awaiting_node"
         );
         gameRunRepository.save(run);
+        buildService.initialize(run);
         runMapService.generate(run);
         return toView(run, List.of("路线图已经生成，选择第一层的相邻节点开始修行。"));
     }
@@ -106,8 +120,9 @@ public class GameService {
 
         EventCatalog.ChoiceDefinition choice = event.choices().get(choiceIndex);
         Outcome outcome = resolveOutcome(run, event, node);
-        int healthDelta = choice.healthDelta() + outcome.healthDelta();
-        int spiritDelta = choice.spiritDelta() + outcome.spiritDelta();
+        BuildService.BuildModifier buildModifier = buildService.modifier(run.getId(), node.getType());
+        int healthDelta = choice.healthDelta() + outcome.healthDelta() + buildModifier.healthDelta();
+        int spiritDelta = choice.spiritDelta() + outcome.spiritDelta() + buildModifier.spiritDelta();
         int lifespanDelta = choice.lifespanDelta() + outcome.lifespanDelta();
         int karmaDelta = choice.karmaDelta() + outcome.karmaDelta();
         int nextTurn = run.getTurn() + 1;
@@ -115,6 +130,7 @@ public class GameService {
         boolean boss = "BOSS".equals(node.getType());
         String nextStatus = dead ? "DEAD" : (boss ? "ASCENDED" : "RUNNING");
         String endingId = dead ? "fallen_path" : (boss ? resolveEnding(run, choiceIndex, healthDelta, spiritDelta, karmaDelta) : null);
+        boolean rewardPending = "RUNNING".equals(nextStatus) && buildService.givesReward(node.getType());
 
         run.applyChoice(
                 healthDelta,
@@ -127,6 +143,10 @@ public class GameService {
                 endingId
         );
         run.clearNode();
+        if (rewardPending) {
+            run.setPendingRewardNode(node.getId());
+            node.markRewardPending();
+        }
         gameRunRepository.save(run);
         runEventRepository.save(new RunEventEntity(
                 run.getId(),
@@ -144,7 +164,10 @@ public class GameService {
         ));
 
         List<RunMapNodeEntity> allNodes = runMapService.getNodes(run.getId());
-        if ("RUNNING".equals(nextStatus)) {
+        if (rewardPending) {
+            rewardOfferRepository.saveAll(buildService.createOffers(run, node));
+            runMapService.saveNode(node);
+        } else if ("RUNNING".equals(nextStatus)) {
             runMapService.completeAndUnlock(node, allNodes);
         } else {
             node.markCleared();
@@ -155,12 +178,56 @@ public class GameService {
         if (outcome.note() != null) {
             transientLogs.add(outcome.note());
         }
+        if (buildModifier.healthDelta() != 0 || buildModifier.spiritDelta() != 0) {
+            transientLogs.add("本局构筑生效：战斗卡牌为这次结算提供了额外加成。");
+        }
+        if (rewardPending) {
+            transientLogs.add("战斗结束：请选择一张功法、法宝或符箓加入构筑。");
+        }
         if (dead) {
             transientLogs.add("你的肉身或寿元无法支撑下一步，修仙路在此断绝。");
         } else if (boss) {
             transientLogs.add("你完成了渡劫，新的结局正在因果簿上显现。");
         }
         return toView(run, transientLogs);
+    }
+
+    @Transactional
+    public synchronized GameRunView claimReward(String id, String rewardId) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        String pendingNodeId = run.getPendingRewardNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有待领取的战斗奖励。");
+        }
+
+        RewardOfferEntity selected = rewardOfferRepository.findByIdAndRunId(rewardId, run.getId())
+                .orElseThrow(() -> new IllegalArgumentException("找不到这张奖励卡。"));
+        if (!"PENDING".equals(selected.getStatus()) || !pendingNodeId.equals(selected.getNodeId())) {
+            throw new IllegalStateException("这张奖励卡已经失效。");
+        }
+
+        BuildCatalog.CardDefinition card = BuildCatalog.get(selected.getCardId());
+        BuildItemEntity buildItem = buildService.toBuildItem(run.getId(), selected);
+        buildItemRepository.save(buildItem);
+        run.applyBuildReward(card.healthOnClaim(), card.spiritOnClaim(), card.lifespanOnClaim(), card.karmaOnClaim());
+
+        List<RewardOfferEntity> pendingOffers = rewardOfferRepository
+                .findByRunIdAndStatusOrderByCreatedAtAsc(run.getId(), "PENDING");
+        for (RewardOfferEntity offer : pendingOffers) {
+            if (offer.getId().equals(selected.getId())) {
+                offer.claim();
+            } else {
+                offer.discard();
+            }
+        }
+        rewardOfferRepository.saveAll(pendingOffers);
+
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), pendingNodeId);
+        run.clearPendingReward();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        gameRunRepository.save(run);
+        return toView(run, List.of("你将“" + selected.getName() + "”纳入本局构筑，下一层路线已经解锁。"));
     }
 
     private GameRunEntity findRun(String id) {
@@ -234,13 +301,19 @@ public class GameService {
                 .toList();
         RouteMapView map = new RouteMapView(10, nodes);
         EndingView ending = run.getEndingId() == null ? null : toEndingView(run.getEndingId());
+        List<BuildCardView> build = buildService.toViews(run.getId());
+        List<RewardOfferView> rewardOffers = rewardOfferRepository
+                .findByRunIdAndStatusOrderByCreatedAtAsc(run.getId(), "PENDING")
+                .stream()
+                .map(buildService::toRewardView)
+                .toList();
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
                 run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(),
                 run.getTurn(), run.getStatus(), run.getCurrentNodeId(), run.getCurrentFloor(),
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
-                map, ending, logs
+                map, ending, build, rewardOffers, logs
         );
     }
 

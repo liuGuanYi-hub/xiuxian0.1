@@ -89,6 +89,10 @@ public class RunMapNodeEntity {
         this.status = "CLEARED";
     }
 
+    public void markRewardPending() {
+        this.status = "REWARD";
+    }
+
     public void unlock() {
         if ("LOCKED".equals(this.status)) {
             this.status = "AVAILABLE";

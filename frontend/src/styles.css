@@ -114,6 +114,30 @@ h1, h2, p { margin-top: 0; }
 .ending-card.fallen { border-color: #76504d; background: linear-gradient(135deg, rgba(57, 39, 42, .9), rgba(22, 29, 37, .96)); }
 .ending-seal { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 auto; color: #d8ad69; border: 1px solid currentColor; font-size: 22px; }
 .ending-card h2 { margin: 10px 0 10px; color: #f0dfbd; }.ending-card p:last-child { margin-bottom: 0; color: #b8c6bd; line-height: 1.8; }
+.build-card-panel { margin-bottom: 18px; padding: 20px 22px; border: 1px solid #293846; background: #131e29; }
+.build-card-panel .section-heading { margin-bottom: 13px; }
+.build-count { margin-left: 6px; color: #d8ad69 !important; }
+.build-card-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.build-card { min-height: 92px; padding: 11px; border: 1px solid #394a58; background: #182632; }
+.build-card.稀有, .build-card.传说 { border-color: #80623c; background: linear-gradient(145deg, #292d2c, #1b2935); }
+.build-card-topline, .reward-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.card-category { color: #8d9ba4; font-family: system-ui, sans-serif; font-size: 10px; }
+.build-card strong, .build-card small { display: block; }
+.build-card strong { margin-top: 9px; color: #e7d6b7; font-size: 13px; }
+.build-card small { margin-top: 6px; color: #82919a; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.5; }
+.reward-panel { margin-bottom: 18px; padding: clamp(22px, 4vw, 34px); border: 1px solid rgba(216, 173, 105, .35); background: linear-gradient(145deg, rgba(51, 45, 39, .95), rgba(23, 31, 39, .98)); }
+.reward-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.reward-heading h2 { margin: 10px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 33px); }
+.reward-tip { color: #9d8c75; font-family: system-ui, sans-serif; font-size: 11px; white-space: nowrap; }
+.reward-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+.reward-card { display: flex; min-height: 218px; flex-direction: column; align-items: stretch; padding: 16px; text-align: left; color: #eadfc8; border: 1px solid #5b5147; background: rgba(21, 29, 37, .9); transition: .2s ease; }
+.reward-card:hover:not(:disabled) { border-color: #d8ad69; background: rgba(59, 54, 48, .95); transform: translateY(-3px); }
+.reward-card:disabled { cursor: wait; opacity: .6; }
+.reward-card-topline > span:first-child { color: #9eabb4; font-family: system-ui, sans-serif; font-size: 11px; }
+.reward-card > strong { margin-top: 20px; color: #f0dfbd; font-size: 18px; }
+.reward-card > p { margin: 10px 0 0; color: #aeb8bd; font-size: 13px; line-height: 1.7; }
+.reward-card > small { margin-top: 11px; color: #d8ad69; font-family: system-ui, sans-serif; font-size: 11px; line-height: 1.6; }
+.reward-claim { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 17px; color: #d8ad69; font-family: system-ui, sans-serif; font-size: 11px; }
 
 @media (max-width: 640px) {
   .origin-grid, .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -125,4 +149,6 @@ h1, h2, p { margin-top: 0; }
   .restore-button { width: 100%; }
   .route-heading { flex-direction: column; gap: 8px; }.route-progress { align-self: flex-start; }
   .route-node { min-height: 70px; }.route-node strong { font-size: 11px; }.route-legend { gap: 9px; }
+  .build-card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.reward-grid { grid-template-columns: 1fr; }.reward-card { min-height: 175px; }
+  .reward-heading { flex-direction: column; gap: 7px; }.reward-tip { white-space: normal; }
 }

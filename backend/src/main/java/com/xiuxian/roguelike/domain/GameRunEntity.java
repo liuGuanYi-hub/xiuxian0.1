@@ -58,6 +58,9 @@ public class GameRunEntity {
     @Column(length = 40)
     private String endingId;
 
+    @Column(name = "pending_reward_node_id", length = 36)
+    private String pendingRewardNodeId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -86,6 +89,7 @@ public class GameRunEntity {
         this.currentNodeId = "";
         this.currentFloor = 0;
         this.endingId = null;
+        this.pendingRewardNodeId = null;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
@@ -105,6 +109,7 @@ public class GameRunEntity {
     public String getCurrentNodeId() { return currentNodeId; }
     public int getCurrentFloor() { return currentFloor; }
     public String getEndingId() { return endingId; }
+    public String getPendingRewardNodeId() { return pendingRewardNodeId; }
 
     public void applyChoice(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta,
                             String nextEventId, String nextRealm, String nextStatus, String nextEndingId) {
@@ -130,6 +135,24 @@ public class GameRunEntity {
     public void clearNode() {
         this.currentNodeId = "";
         this.currentEventId = "awaiting_node";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setPendingRewardNode(String nodeId) {
+        this.pendingRewardNodeId = nodeId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void clearPendingReward() {
+        this.pendingRewardNodeId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void applyBuildReward(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta) {
+        this.health = Math.max(0, this.health + healthDelta);
+        this.spirit = Math.max(0, this.spirit + spiritDelta);
+        this.lifespan = Math.max(0, this.lifespan + lifespanDelta);
+        this.karma += karmaDelta;
         this.updatedAt = LocalDateTime.now();
     }
 }
