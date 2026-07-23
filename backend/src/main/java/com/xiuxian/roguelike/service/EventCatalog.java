@@ -1,7 +1,9 @@
 package com.xiuxian.roguelike.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 当前阶段的事件内容目录。
@@ -141,6 +143,28 @@ public final class EventCatalog {
             ))
     );
 
+    private static final Map<String, List<String>> NEXT_EVENT_POOLS = Map.ofEntries(
+            Map.entry("river", List.of("herb", "sect", "cave")),
+            Map.entry("herb", List.of("beast", "duel", "seal")),
+            Map.entry("sect", List.of("beast", "duel", "seal")),
+            Map.entry("cave", List.of("beast", "duel", "seal")),
+            Map.entry("beast", List.of("moon", "ghost", "venom")),
+            Map.entry("duel", List.of("moon", "ghost", "venom")),
+            Map.entry("seal", List.of("moon", "ghost", "venom")),
+            Map.entry("moon", List.of("camp", "inner", "vein")),
+            Map.entry("ghost", List.of("camp", "inner", "vein")),
+            Map.entry("venom", List.of("camp", "inner", "vein")),
+            Map.entry("camp", List.of("thunder", "auction")),
+            Map.entry("inner", List.of("thunder", "auction")),
+            Map.entry("vein", List.of("thunder", "auction")),
+            Map.entry("thunder", List.of("trial_prep")),
+            Map.entry("auction", List.of("trial_prep")),
+            Map.entry("trial_prep", List.of("trial")),
+            Map.entry("trial", List.of("tribulation")),
+            Map.entry("tribulation", List.of("gate")),
+            Map.entry("gate", List.of("finish"))
+    );
+
     private EventCatalog() {
     }
 
@@ -150,6 +174,39 @@ public final class EventCatalog {
             throw new IllegalStateException("事件配置不存在：" + id);
         }
         return event;
+    }
+
+    /**
+     * 根据本局 seed、回合和已访问节点选择下一关，保证同一局可复盘，不同局顺序不同。
+     */
+    public static String chooseNextEvent(String currentEventId, String preferredNextEventId,
+                                         int choiceIndex, long seed, int turn, Set<String> visitedEventIds) {
+        List<String> candidates = NEXT_EVENT_POOLS.get(currentEventId);
+        if (candidates == null || candidates.isEmpty()) {
+            return preferredNextEventId;
+        }
+
+        List<String> available = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (!visitedEventIds.contains(candidate)) {
+                available.add(candidate);
+            }
+        }
+        if (available.isEmpty()) {
+            available.addAll(candidates);
+        }
+
+        long mixed = seed
+                ^ (long) currentEventId.hashCode() * 31
+                ^ (long) turn * 0x9E3779B97F4A7C15L
+                ^ (long) (choiceIndex + 1) * 0xC2B2AE3D27D4EB4FL;
+        int randomIndex = Math.floorMod((int) (mixed ^ (mixed >>> 32)), available.size());
+        if (preferredNextEventId != null
+                && available.contains(preferredNextEventId)
+                && Math.floorMod((int) mixed, 4) == 0) {
+            return preferredNextEventId;
+        }
+        return available.get(randomIndex);
     }
 
     private static EventDefinition event(String id, String title, String description, ChoiceDefinition... choices) {
@@ -168,4 +225,3 @@ public final class EventCatalog {
                                    int lifespanDelta, int karmaDelta, String nextEventId) {
     }
 }
-

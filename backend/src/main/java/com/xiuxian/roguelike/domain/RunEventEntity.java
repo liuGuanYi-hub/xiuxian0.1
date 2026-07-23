@@ -48,6 +48,9 @@ public class RunEventEntity {
     @Column(nullable = false)
     private int karmaDelta;
 
+    @Column(length = 200)
+    private String resultNote;
+
     @Column(length = 36, unique = true)
     private String requestId;
 
@@ -59,7 +62,7 @@ public class RunEventEntity {
 
     public RunEventEntity(String runId, int turn, String eventId, String eventTitle, int choiceIndex,
                           String choiceLabel, int healthDelta, int spiritDelta, int lifespanDelta,
-                          int karmaDelta, String requestId) {
+                          int karmaDelta, String requestId, String resultNote) {
         this.id = java.util.UUID.randomUUID().toString();
         this.runId = runId;
         this.turn = turn;
@@ -72,12 +75,15 @@ public class RunEventEntity {
         this.lifespanDelta = lifespanDelta;
         this.karmaDelta = karmaDelta;
         this.requestId = requestId;
+        this.resultNote = resultNote;
         this.createdAt = LocalDateTime.now();
     }
 
     public String getRunId() { return runId; }
     public int getTurn() { return turn; }
+    public String getEventId() { return eventId; }
     public String getEventTitle() { return eventTitle; }
     public String getChoiceLabel() { return choiceLabel; }
     public String getRequestId() { return requestId; }
+    public String getResultNote() { return resultNote; }
 }

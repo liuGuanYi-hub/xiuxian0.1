@@ -14,7 +14,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -75,23 +78,40 @@ public class GameService {
         }
 
         EventCatalog.ChoiceDefinition choice = event.choices().get(choiceIndex);
-        String nextEvent = choice.nextEventId();
+        List<RunEventEntity> history = runEventRepository.findByRunIdOrderByTurnAsc(run.getId());
+        Set<String> visitedEventIds = new HashSet<>();
+        history.forEach(item -> visitedEventIds.add(item.getEventId()));
+        visitedEventIds.add(run.getCurrentEventId());
+
+        Outcome outcome = resolveOutcome(run, event);
+        int healthDelta = choice.healthDelta() + outcome.healthDelta();
+        int spiritDelta = choice.spiritDelta() + outcome.spiritDelta();
+        int lifespanDelta = choice.lifespanDelta() + outcome.lifespanDelta();
+        int karmaDelta = choice.karmaDelta() + outcome.karmaDelta();
+        String nextEvent = EventCatalog.chooseNextEvent(
+                run.getCurrentEventId(),
+                choice.nextEventId(),
+                choiceIndex,
+                run.getSeed(),
+                run.getTurn() + 1,
+                visitedEventIds
+        );
         String nextStatus = "RUNNING";
         int nextTurn = run.getTurn() + 1;
 
         if ("finish".equals(nextEvent)) {
             nextStatus = "ASCENDED";
-        } else if (run.getHealth() + choice.healthDelta() <= 0
-                || run.getLifespan() + choice.lifespanDelta() <= 0) {
+        } else if (run.getHealth() + healthDelta <= 0
+                || run.getLifespan() + lifespanDelta <= 0) {
             nextStatus = "DEAD";
             nextEvent = "finish";
         }
 
         run.applyChoice(
-                choice.healthDelta(),
-                choice.spiritDelta(),
-                choice.lifespanDelta(),
-                choice.karmaDelta(),
+                healthDelta,
+                spiritDelta,
+                lifespanDelta,
+                karmaDelta,
                 nextEvent,
                 realmForTurn(nextTurn),
                 nextStatus
@@ -104,11 +124,12 @@ public class GameService {
                 event.title(),
                 choiceIndex,
                 choice.label(),
-                choice.healthDelta(),
-                choice.spiritDelta(),
-                choice.lifespanDelta(),
-                choice.karmaDelta(),
-                requestId
+                healthDelta,
+                spiritDelta,
+                lifespanDelta,
+                karmaDelta,
+                requestId,
+                outcome.note()
         ));
 
         List<String> transientLogs = new ArrayList<>();
@@ -159,7 +180,11 @@ public class GameService {
         List<String> logs = new ArrayList<>();
         logs.add("你以“" + run.getPlayerName() + "”之名踏上修仙路。");
         for (RunEventEntity history : runEventRepository.findByRunIdOrderByTurnAsc(run.getId())) {
-            logs.add("第 " + history.getTurn() + " 回合 · " + history.getEventTitle() + "：" + history.getChoiceLabel());
+            String line = "第 " + history.getTurn() + " 回合 · " + history.getEventTitle() + "：" + history.getChoiceLabel();
+            if (history.getResultNote() != null) {
+                line += " · " + history.getResultNote();
+            }
+            logs.add(line);
         }
         logs.addAll(transientLogs);
 
@@ -177,5 +202,23 @@ public class GameService {
                 new EventView(event.id(), event.title(), event.description(), choices),
                 logs
         );
+    }
+
+    private Outcome resolveOutcome(GameRunEntity run, EventCatalog.EventDefinition event) {
+        long mixedSeed = run.getSeed()
+                ^ (long) run.getTurn() * 0x9E3779B97F4A7C15L
+                ^ event.id().hashCode();
+        int roll = new Random(mixedSeed).nextInt(100);
+        int luckyThreshold = Math.min(35, 18 + Math.max(-5, Math.min(12, run.getKarma())));
+        if (roll < luckyThreshold) {
+            return new Outcome(4, 5, 0, 1, "随机机缘：你在这次选择中额外获得了一缕灵气。");
+        }
+        if (roll >= 92) {
+            return new Outcome(-6, -2, 0, -1, "随机变数：暗处的因果突然反噬了你的选择。");
+        }
+        return new Outcome(0, 0, 0, 0, null);
+    }
+
+    private record Outcome(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta, String note) {
     }
 }
