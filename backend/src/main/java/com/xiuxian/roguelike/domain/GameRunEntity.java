@@ -67,6 +67,12 @@ public class GameRunEntity {
     @Column(name = "pending_upgrade_node_id", length = 36)
     private String pendingUpgradeNodeId;
 
+    @Column(name = "pending_shop_node_id", length = 36)
+    private String pendingShopNodeId;
+
+    @Column(name = "pending_removal_node_id", length = 36)
+    private String pendingRemovalNodeId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -98,6 +104,8 @@ public class GameRunEntity {
         this.endingId = null;
         this.pendingRewardNodeId = null;
         this.pendingUpgradeNodeId = null;
+        this.pendingShopNodeId = null;
+        this.pendingRemovalNodeId = null;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
@@ -120,6 +128,8 @@ public class GameRunEntity {
     public String getEndingId() { return endingId; }
     public String getPendingRewardNodeId() { return pendingRewardNodeId; }
     public String getPendingUpgradeNodeId() { return pendingUpgradeNodeId; }
+    public String getPendingShopNodeId() { return pendingShopNodeId; }
+    public String getPendingRemovalNodeId() { return pendingRemovalNodeId; }
 
     public void applyChoice(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta,
                             String nextEventId, String nextRealm, String nextStatus, String nextEndingId) {
@@ -173,6 +183,26 @@ public class GameRunEntity {
 
     public void clearPendingUpgrade() {
         this.pendingUpgradeNodeId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setPendingShopNode(String nodeId) {
+        this.pendingShopNodeId = nodeId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void clearPendingShop() {
+        this.pendingShopNodeId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setPendingRemovalNode(String nodeId) {
+        this.pendingRemovalNodeId = nodeId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void clearPendingRemoval() {
+        this.pendingRemovalNodeId = null;
         this.updatedAt = LocalDateTime.now();
     }
 

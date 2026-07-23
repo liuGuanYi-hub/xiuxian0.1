@@ -3,22 +3,29 @@ package com.xiuxian.roguelike.service;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceView;
 import com.xiuxian.roguelike.api.GameDtos.BuildCardView;
+import com.xiuxian.roguelike.api.GameDtos.BuildStatsView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
 import com.xiuxian.roguelike.api.GameDtos.EventView;
 import com.xiuxian.roguelike.api.GameDtos.GameRunView;
 import com.xiuxian.roguelike.api.GameDtos.MapNodeView;
 import com.xiuxian.roguelike.api.GameDtos.RewardOfferView;
 import com.xiuxian.roguelike.api.GameDtos.RouteMapView;
+import com.xiuxian.roguelike.api.GameDtos.RemovalView;
+import com.xiuxian.roguelike.api.GameDtos.ShopView;
 import com.xiuxian.roguelike.api.GameDtos.StartRunRequest;
 import com.xiuxian.roguelike.domain.BuildItemEntity;
 import com.xiuxian.roguelike.domain.GameRunEntity;
 import com.xiuxian.roguelike.domain.RewardOfferEntity;
 import com.xiuxian.roguelike.domain.RunEventEntity;
 import com.xiuxian.roguelike.domain.RunMapNodeEntity;
+import com.xiuxian.roguelike.domain.RunShopEntity;
+import com.xiuxian.roguelike.domain.RunShopOfferEntity;
 import com.xiuxian.roguelike.repository.BuildItemRepository;
 import com.xiuxian.roguelike.repository.GameRunRepository;
 import com.xiuxian.roguelike.repository.RewardOfferRepository;
 import com.xiuxian.roguelike.repository.RunEventRepository;
+import com.xiuxian.roguelike.repository.RunShopOfferRepository;
+import com.xiuxian.roguelike.repository.RunShopRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -35,18 +42,25 @@ public class GameService {
     private final RunEventRepository runEventRepository;
     private final BuildItemRepository buildItemRepository;
     private final RewardOfferRepository rewardOfferRepository;
+    private final RunShopRepository runShopRepository;
+    private final RunShopOfferRepository runShopOfferRepository;
     private final RunMapService runMapService;
     private final BuildService buildService;
+    private final BuildConfigService configService;
 
     public GameService(GameRunRepository gameRunRepository, RunEventRepository runEventRepository,
                        BuildItemRepository buildItemRepository, RewardOfferRepository rewardOfferRepository,
-                       RunMapService runMapService, BuildService buildService) {
+                       RunShopRepository runShopRepository, RunShopOfferRepository runShopOfferRepository,
+                       RunMapService runMapService, BuildService buildService, BuildConfigService configService) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
         this.buildItemRepository = buildItemRepository;
         this.rewardOfferRepository = rewardOfferRepository;
+        this.runShopRepository = runShopRepository;
+        this.runShopOfferRepository = runShopOfferRepository;
         this.runMapService = runMapService;
         this.buildService = buildService;
+        this.configService = configService;
     }
 
     @Transactional
@@ -78,6 +92,9 @@ public class GameService {
         ensureRunning(run);
         if (!run.getCurrentNodeId().isBlank()) {
             throw new IllegalStateException("请先完成当前节点。");
+        }
+        if (hasPendingAction(run)) {
+            throw new IllegalStateException("请先处理当前节点留下的构筑操作。");
         }
 
         RunMapNodeEntity node = runMapService.findNode(run.getId(), nodeId);
@@ -113,6 +130,7 @@ public class GameService {
         }
 
         EventCatalog.EventDefinition event = EventCatalog.get(run.getCurrentEventId());
+        EventCatalog.EventMeta eventMeta = EventCatalog.meta(event.id());
         int choiceIndex = request.choiceIndex();
         if (choiceIndex < 0 || choiceIndex >= event.choices().size()) {
             throw new IllegalArgumentException("无效的事件选项。");
@@ -123,8 +141,8 @@ public class GameService {
         BuildService.BuildModifier buildModifier = buildService.modifier(run.getId(), node.getType());
         int healthDelta = choice.healthDelta() + outcome.healthDelta() + buildModifier.healthDelta();
         int spiritDelta = choice.spiritDelta() + outcome.spiritDelta() + buildModifier.spiritDelta();
-        int lifespanDelta = choice.lifespanDelta() + outcome.lifespanDelta();
-        int karmaDelta = choice.karmaDelta() + outcome.karmaDelta();
+        int lifespanDelta = choice.lifespanDelta() + outcome.lifespanDelta() + buildModifier.lifespanDelta();
+        int karmaDelta = choice.karmaDelta() + outcome.karmaDelta() + buildModifier.karmaDelta();
         int nextTurn = run.getTurn() + 1;
         boolean dead = run.getHealth() + healthDelta <= 0 || run.getLifespan() + lifespanDelta <= 0;
         boolean boss = "BOSS".equals(node.getType());
@@ -132,6 +150,8 @@ public class GameService {
         String endingId = dead ? "fallen_path" : (boss ? resolveEnding(run, choiceIndex, healthDelta, spiritDelta, karmaDelta) : null);
         boolean rewardPending = "RUNNING".equals(nextStatus) && buildService.givesReward(node.getType());
         boolean upgradePending = "RUNNING".equals(nextStatus) && "REST".equals(node.getType());
+        boolean shopPending = "RUNNING".equals(nextStatus) && "SHOP".equals(node.getType());
+        boolean removalPending = "RUNNING".equals(nextStatus) && "REMOVE_CARD_FREE".equals(choice.action());
 
         run.applyChoice(
                 healthDelta,
@@ -150,6 +170,12 @@ public class GameService {
         } else if (upgradePending) {
             run.setPendingUpgradeNode(node.getId());
             node.markUpgradePending();
+        } else if (shopPending) {
+            run.setPendingShopNode(node.getId());
+            node.markShopPending();
+        } else if (removalPending) {
+            run.setPendingRemovalNode(node.getId());
+            node.markRemovalPending();
         }
         gameRunRepository.save(run);
         runEventRepository.save(new RunEventEntity(
@@ -169,9 +195,16 @@ public class GameService {
 
         List<RunMapNodeEntity> allNodes = runMapService.getNodes(run.getId());
         if (rewardPending) {
-            rewardOfferRepository.saveAll(buildService.createOffers(run, node));
+            rewardOfferRepository.saveAll(buildService.createOffers(run, node, eventMeta, countClearedElites(allNodes)));
             runMapService.saveNode(node);
         } else if (upgradePending) {
+            runMapService.saveNode(node);
+        } else if (shopPending) {
+            runMapService.saveNode(node);
+            RunShopEntity shop = new RunShopEntity(run.getId(), node.getId());
+            runShopRepository.save(shop);
+            runShopOfferRepository.saveAll(buildService.createShopOffers(run, shop));
+        } else if (removalPending) {
             runMapService.saveNode(node);
         } else if ("RUNNING".equals(nextStatus)) {
             runMapService.completeAndUnlock(node, allNodes);
@@ -184,7 +217,8 @@ public class GameService {
         if (outcome.note() != null) {
             transientLogs.add(outcome.note());
         }
-        if (buildModifier.healthDelta() != 0 || buildModifier.spiritDelta() != 0) {
+        if (buildModifier.healthDelta() != 0 || buildModifier.spiritDelta() != 0
+                || buildModifier.lifespanDelta() != 0 || buildModifier.karmaDelta() != 0) {
             transientLogs.add("本局构筑生效：战斗卡牌为这次结算提供了额外加成。");
         }
         if (rewardPending) {
@@ -192,6 +226,12 @@ public class GameService {
         }
         if (upgradePending) {
             transientLogs.add("闭关完成：请选择一张卡牌升级，或跳过本次强化。");
+        }
+        if (shopPending) {
+            transientLogs.add("坊市已开门：可以购买卡牌、刷新商品、移除一张弱卡，或直接离开。");
+        }
+        if (removalPending) {
+            transientLogs.add("天关黑市：请选择一张卡牌免费移出构筑，或保留当前卡组。");
         }
         if (dead) {
             transientLogs.add("你的肉身或寿元无法支撑下一步，修仙路在此断绝。");
@@ -216,7 +256,7 @@ public class GameService {
             throw new IllegalStateException("这张奖励卡已经失效。");
         }
 
-        BuildCatalog.CardDefinition card = BuildCatalog.get(selected.getCardId());
+        BuildConfigService.CardDefinition card = configService.get(selected.getCardId());
         BuildItemEntity buildItem = buildService.toBuildItem(run.getId(), selected);
         buildItemRepository.save(buildItem);
         run.applyBuildReward(card.healthOnClaim(), card.spiritOnClaim(), card.lifespanOnClaim(), card.karmaOnClaim());
@@ -250,12 +290,15 @@ public class GameService {
 
         BuildItemEntity item = buildItemRepository.findByIdAndRunId(cardId, run.getId())
                 .orElseThrow(() -> new IllegalArgumentException("找不到这张构筑卡牌。"));
+        if (!item.isActive()) {
+            throw new IllegalStateException("这张卡牌已经移出构筑。");
+        }
         int cost = buildService.upgradeCost(item.getUpgradeLevel());
         if (run.getSpiritStones() < cost) {
             throw new IllegalStateException("灵石不足，需要 " + cost + " 灵石。");
         }
 
-        BuildCatalog.CardDefinition card = BuildCatalog.get(item.getCardId());
+        BuildConfigService.CardDefinition card = configService.get(item.getCardId());
         run.spendSpiritStones(cost);
         run.applyBuildReward(
                 buildService.upgradeHealthReward(card),
@@ -290,6 +333,142 @@ public class GameService {
         return toView(run, List.of("你结束闭关，保留灵石与当前构筑。下一层路线已经解锁。"));
     }
 
+    @Transactional
+    public synchronized GameRunView buyShopOffer(String id, String offerId) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        RunShopEntity shop = findOpenShop(run);
+        RunShopOfferEntity offer = runShopOfferRepository.findByIdAndShopId(offerId, shop.getId())
+                .orElseThrow(() -> new IllegalArgumentException("找不到这件坊市商品。"));
+        if (!"ACTIVE".equals(offer.getStatus())) {
+            throw new IllegalStateException("这件商品已经售出或失效。");
+        }
+        if (run.getSpiritStones() < offer.getPrice()) {
+            throw new IllegalStateException("灵石不足，需要 " + offer.getPrice() + " 灵石。");
+        }
+        BuildConfigService.CardDefinition card = configService.get(offer.getCardId());
+        run.spendSpiritStones(offer.getPrice());
+        buildItemRepository.save(buildService.toBuildItem(run.getId(), offer));
+        run.applyBuildReward(card.healthOnClaim(), card.spiritOnClaim(), card.lifespanOnClaim(), card.karmaOnClaim());
+        offer.markSold();
+        runShopOfferRepository.save(offer);
+        gameRunRepository.save(run);
+        return toView(run, List.of("你在坊市购入“" + offer.getName() + "”，消耗 " + offer.getPrice() + " 灵石。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView refreshShop(String id) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        RunShopEntity shop = findOpenShop(run);
+        if (shop.getRefreshCount() >= shop.getRefreshLimit()) {
+            throw new IllegalStateException("本次坊市已经没有刷新次数了。");
+        }
+        int cost = 10 + shop.getRefreshCount() * 5;
+        if (run.getSpiritStones() < cost) {
+            throw new IllegalStateException("灵石不足，需要 " + cost + " 灵石刷新。");
+        }
+        run.spendSpiritStones(cost);
+        runShopOfferRepository.findByShopIdAndStatusOrderBySlotAsc(shop.getId(), "ACTIVE")
+                .forEach(RunShopOfferEntity::expire);
+        shop.refresh();
+        runShopOfferRepository.saveAll(buildService.createShopOffers(run, shop));
+        runShopRepository.save(shop);
+        gameRunRepository.save(run);
+        return toView(run, List.of("坊市重新摆出商品，消耗 " + cost + " 灵石。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView removeShopCard(String id, String cardId) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        RunShopEntity shop = findOpenShop(run);
+        if (shop.isRemovalUsed()) {
+            throw new IllegalStateException("本次坊市已经使用过移除机会。");
+        }
+        String removedName = removeCardFromBuild(run, cardId, 30);
+        shop.useRemoval();
+        runShopRepository.save(shop);
+        gameRunRepository.save(run);
+        return toView(run, List.of("你在坊市花费 30 灵石移除了“" + removedName + "”。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView leaveShop(String id) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        RunShopEntity shop = findOpenShop(run);
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), shop.getNodeId());
+        shop.close();
+        run.clearPendingShop();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        runShopRepository.save(shop);
+        gameRunRepository.save(run);
+        return toView(run, List.of("你离开坊市，下一层路线已经解锁。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView removeSpecialCard(String id, String cardId) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        String pendingNodeId = run.getPendingRemovalNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有特殊事件移除机会。");
+        }
+        String removedName = removeCardFromBuild(run, cardId, 0);
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), pendingNodeId);
+        run.clearPendingRemoval();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        gameRunRepository.save(run);
+        return toView(run, List.of("你免费移除了“" + removedName + "”，黑市因果已经结清。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView skipSpecialRemoval(String id) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        String pendingNodeId = run.getPendingRemovalNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有特殊事件移除机会。");
+        }
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), pendingNodeId);
+        run.clearPendingRemoval();
+        runMapService.completeAndUnlock(node, runMapService.getNodes(run.getId()));
+        gameRunRepository.save(run);
+        return toView(run, List.of("你保留了当前构筑，黑市路线已经解锁。"));
+    }
+
+    private RunShopEntity findOpenShop(GameRunEntity run) {
+        String pendingNodeId = run.getPendingShopNodeId();
+        if (pendingNodeId == null || pendingNodeId.isBlank()) {
+            throw new IllegalStateException("当前没有开启的坊市。");
+        }
+        RunShopEntity shop = runShopRepository.findByRunIdAndNodeId(run.getId(), pendingNodeId)
+                .orElseThrow(() -> new EntityNotFoundException("找不到本局坊市存档。"));
+        if (!"OPEN".equals(shop.getStatus())) {
+            throw new IllegalStateException("本次坊市已经关闭。");
+        }
+        return shop;
+    }
+
+    private String removeCardFromBuild(GameRunEntity run, String cardId, int cost) {
+        if (buildService.activeCardCount(run.getId()) <= 1) {
+            throw new IllegalStateException("至少要保留一张有效构筑卡牌。");
+        }
+        BuildItemEntity item = buildItemRepository.findByIdAndRunId(cardId, run.getId())
+                .orElseThrow(() -> new IllegalArgumentException("找不到这张构筑卡牌。"));
+        if (!item.isActive()) {
+            throw new IllegalStateException("这张卡牌已经移出构筑。");
+        }
+        if (run.getSpiritStones() < cost) {
+            throw new IllegalStateException("灵石不足，需要 " + cost + " 灵石。");
+        }
+        run.spendSpiritStones(cost);
+        item.remove();
+        buildItemRepository.save(item);
+        return item.getName();
+    }
+
     private GameRunEntity findRun(String id) {
         return gameRunRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到这局修仙旅程：" + id));
@@ -299,6 +478,19 @@ public class GameService {
         if (!"RUNNING".equals(run.getStatus())) {
             throw new IllegalStateException("这局旅程已经结束，请重新开始。");
         }
+    }
+
+    private boolean hasPendingAction(GameRunEntity run) {
+        return (run.getPendingRewardNodeId() != null && !run.getPendingRewardNodeId().isBlank())
+                || (run.getPendingUpgradeNodeId() != null && !run.getPendingUpgradeNodeId().isBlank())
+                || (run.getPendingShopNodeId() != null && !run.getPendingShopNodeId().isBlank())
+                || (run.getPendingRemovalNodeId() != null && !run.getPendingRemovalNodeId().isBlank());
+    }
+
+    private int countClearedElites(List<RunMapNodeEntity> nodes) {
+        return (int) nodes.stream()
+                .filter(node -> "ELITE".equals(node.getType()) && "CLEARED".equals(node.getStatus()))
+                .count();
     }
 
     private String normalizeRequestId(String requestId) {
@@ -362,6 +554,7 @@ public class GameService {
         RouteMapView map = new RouteMapView(10, nodes);
         EndingView ending = run.getEndingId() == null ? null : toEndingView(run.getEndingId());
         List<BuildCardView> build = buildService.toViews(run.getId());
+        BuildStatsView buildStats = buildService.buildStats(run.getId());
         List<BuildCardView> upgradeOptions = run.getPendingUpgradeNodeId() == null
                 ? List.of()
                 : buildService.toUpgradeViews(run.getId());
@@ -370,13 +563,25 @@ public class GameService {
                 .stream()
                 .map(buildService::toRewardView)
                 .toList();
+        ShopView shop = null;
+        if (run.getPendingShopNodeId() != null) {
+            RunShopEntity shopEntity = runShopRepository.findByRunIdAndNodeId(run.getId(), run.getPendingShopNodeId())
+                    .orElse(null);
+            if (shopEntity != null) {
+                shop = buildService.toShopView(shopEntity,
+                        runShopOfferRepository.findByShopIdAndStatusOrderBySlotAsc(shopEntity.getId(), "ACTIVE"));
+            }
+        }
+        RemovalView removal = run.getPendingRemovalNodeId() == null
+                ? null
+                : buildService.toRemovalView("SPECIAL_EVENT", build);
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
                 run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(), run.getSpiritStones(),
                 run.getTurn(), run.getStatus(), run.getCurrentNodeId(), run.getCurrentFloor(),
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
-                map, ending, build, upgradeOptions, rewardOffers, logs
+                map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, logs
         );
     }
 

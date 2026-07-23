@@ -10,5 +10,7 @@ public interface BuildItemRepository extends JpaRepository<BuildItemEntity, Stri
 
     List<BuildItemEntity> findByRunIdOrderByCreatedAtAsc(String runId);
 
+    List<BuildItemEntity> findByRunIdAndStatusOrderByCreatedAtAsc(String runId, String status);
+
     Optional<BuildItemEntity> findByIdAndRunId(String id, String runId);
 }

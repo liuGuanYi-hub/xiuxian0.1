@@ -59,4 +59,34 @@ public class GameController {
     public GameRunView skipUpgrade(@PathVariable String id) {
         return gameService.skipUpgrade(id);
     }
+
+    @PostMapping("/{id}/removals/{cardId}")
+    public GameRunView removeSpecialCard(@PathVariable String id, @PathVariable String cardId) {
+        return gameService.removeSpecialCard(id, cardId);
+    }
+
+    @PostMapping("/{id}/removals/skip")
+    public GameRunView skipSpecialRemoval(@PathVariable String id) {
+        return gameService.skipSpecialRemoval(id);
+    }
+
+    @PostMapping("/{id}/shops/{offerId}/buy")
+    public GameRunView buyShopOffer(@PathVariable String id, @PathVariable String offerId) {
+        return gameService.buyShopOffer(id, offerId);
+    }
+
+    @PostMapping("/{id}/shops/refresh")
+    public GameRunView refreshShop(@PathVariable String id) {
+        return gameService.refreshShop(id);
+    }
+
+    @PostMapping("/{id}/shops/remove/{cardId}")
+    public GameRunView removeShopCard(@PathVariable String id, @PathVariable String cardId) {
+        return gameService.removeShopCard(id, cardId);
+    }
+
+    @PostMapping("/{id}/shops/leave")
+    public GameRunView leaveShop(@PathVariable String id) {
+        return gameService.leaveShop(id);
+    }
 }

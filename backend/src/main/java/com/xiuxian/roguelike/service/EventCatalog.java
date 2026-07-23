@@ -115,7 +115,7 @@ public final class EventCatalog {
             Map.entry("auction", event(
                     "auction", "天关黑市", "各方修士都在为渡劫准备最后的筹码。有人出售护心镜，也有人出售别人的命。",
                     choice("买下护心镜", "灵石换取安全，剩下的路会轻松一些", 10, -5, -1, 0, "trial_prep"),
-                    choice("把一件因果深重的物品卖掉", "短期获利，代价由未来承担", 5, 0, -2, -5, "trial_prep"),
+                    choice("把一件因果深重的物品卖掉", "短期获利，代价由未来承担；可以免费移除一张构筑卡", 5, 0, -2, -5, "trial_prep", "REMOVE_CARD_FREE"),
                     choice("什么也不买，保留全部底牌", "不依赖外物，只相信自己的选择", 0, 5, 0, 3, "trial_prep")
             )),
             Map.entry("starfall", event(
@@ -329,7 +329,12 @@ public final class EventCatalog {
 
     private static ChoiceDefinition choice(String label, String hint, int healthDelta, int spiritDelta,
                                            int lifespanDelta, int karmaDelta, String nextEventId) {
-        return new ChoiceDefinition(label, hint, healthDelta, spiritDelta, lifespanDelta, karmaDelta, nextEventId);
+        return new ChoiceDefinition(label, hint, healthDelta, spiritDelta, lifespanDelta, karmaDelta, nextEventId, null);
+    }
+
+    private static ChoiceDefinition choice(String label, String hint, int healthDelta, int spiritDelta,
+                                           int lifespanDelta, int karmaDelta, String nextEventId, String action) {
+        return new ChoiceDefinition(label, hint, healthDelta, spiritDelta, lifespanDelta, karmaDelta, nextEventId, action);
     }
 
     public record EventDefinition(String id, String title, String description, List<ChoiceDefinition> choices) {
@@ -345,6 +350,6 @@ public final class EventCatalog {
     }
 
     public record ChoiceDefinition(String label, String hint, int healthDelta, int spiritDelta,
-                                   int lifespanDelta, int karmaDelta, String nextEventId) {
+                                   int lifespanDelta, int karmaDelta, String nextEventId, String action) {
     }
 }

@@ -122,10 +122,23 @@ h1, h2, p { margin-top: 0; }
 .build-card.稀有, .build-card.传说 { border-color: #80623c; background: linear-gradient(145deg, #292d2c, #1b2935); }
 .build-card-topline, .reward-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .card-category { color: #8d9ba4; font-family: system-ui, sans-serif; font-size: 10px; }
+.card-archetype { color: #9eb5b8; font-family: system-ui, sans-serif; font-size: 10px; }
 .card-level { color: #d8ad69; font-family: system-ui, sans-serif; font-size: 10px; }
 .build-card strong, .build-card small { display: block; }
 .build-card strong { margin-top: 9px; color: #e7d6b7; font-size: 13px; }
 .build-card small { margin-top: 6px; color: #82919a; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.5; }
+.build-stats-panel { margin-bottom: 18px; padding: 20px 22px; border: 1px solid #293846; background: linear-gradient(145deg, #172633, #131e29); }
+.build-stats-layout { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.6fr); gap: 20px; }
+.stats-block-title { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: #d8c9ae; font-family: system-ui, sans-serif; font-size: 12px; }
+.stats-block-title small { margin-left: auto; color: #71808a; font-size: 10px; }
+.count-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.count-item { padding: 11px 8px; text-align: center; border: 1px solid #334654; background: #14222d; }
+.count-item strong, .count-item small { display: block; }.count-item strong { color: #e2c48c; font-size: 20px; }.count-item small { margin-top: 4px; color: #82919a; font-family: system-ui, sans-serif; font-size: 10px; }
+.archetype-counts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 10px; }
+.archetype-counts span { padding: 7px 8px; color: #9daab1; background: rgba(255,255,255,.035); font-family: system-ui, sans-serif; font-size: 11px; }.archetype-counts b { float: right; color: #d8ad69; }
+.synergy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.synergy-item { min-height: 67px; padding: 10px; border: 1px solid #334654; background: #14222d; }.synergy-item.active { border-color: #80623c; background: rgba(106, 77, 42, .22); }.synergy-item > div { display: flex; justify-content: space-between; gap: 8px; }.synergy-item strong { color: #d8c9ae; font-size: 12px; }.synergy-item span { color: #d8ad69; font-family: system-ui, sans-serif; font-size: 10px; }.synergy-item small { display: block; margin-top: 7px; color: #81909d; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.4; }
+.battle-bonus-row { display: flex; flex-wrap: wrap; gap: 8px 15px; margin-top: 17px; padding-top: 13px; border-top: 1px solid #293846; color: #9eb5b8; font-family: system-ui, sans-serif; font-size: 11px; }.battle-bonus-row span { display: inline-flex; align-items: center; gap: 5px; }
 .reward-panel { margin-bottom: 18px; padding: clamp(22px, 4vw, 34px); border: 1px solid rgba(216, 173, 105, .35); background: linear-gradient(145deg, rgba(51, 45, 39, .95), rgba(23, 31, 39, .98)); }
 .reward-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .reward-heading h2 { margin: 10px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 33px); }
@@ -151,6 +164,11 @@ h1, h2, p { margin-top: 0; }
 .upgrade-card > small { margin-top: 9px; color: #9eb5b8; font-family: system-ui, sans-serif; font-size: 11px; line-height: 1.6; }
 .upgrade-action { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 15px; color: #74c8c0; font-family: system-ui, sans-serif; font-size: 11px; }
 .upgrade-skip { margin-top: 16px; }
+.shop-panel, .removal-panel { margin-bottom: 18px; padding: clamp(22px, 4vw, 34px); border: 1px solid rgba(116, 200, 192, .34); background: linear-gradient(145deg, rgba(31, 54, 59, .96), rgba(20, 30, 39, .98)); }
+.removal-panel { border-color: rgba(216, 173, 105, .34); background: linear-gradient(145deg, rgba(51, 45, 39, .95), rgba(23, 31, 39, .98)); }
+.shop-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }.shop-heading .event-kicker { display: flex; align-items: center; gap: 6px; margin-bottom: 0; }.shop-heading h2 { margin: 10px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 33px); }.shop-stones { display: inline-flex; align-items: center; gap: 6px; color: #74c8c0; font-family: system-ui, sans-serif; font-size: 12px; white-space: nowrap; }
+.shop-offer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }.shop-offer { display: flex; min-height: 235px; flex-direction: column; padding: 15px; border: 1px solid #3e6468; background: rgba(17, 33, 39, .9); }.shop-offer.稀有, .shop-offer.传说 { border-color: #80623c; background: linear-gradient(145deg, rgba(50, 46, 39, .96), rgba(25, 37, 43, .98)); }.shop-offer > strong { margin-top: 18px; color: #f0dfbd; font-size: 17px; }.shop-offer > p { margin: 9px 0 0; color: #aeb8bd; font-size: 12px; line-height: 1.6; }.shop-offer > small { margin-top: 10px; color: #d8ad69; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.5; }.shop-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin-top: auto; padding: 10px 8px; color: #152027; border: 0; background: #74c8c0; font-family: system-ui, sans-serif; font-size: 11px; }.shop-action-button:hover:not(:disabled) { background: #9be0d8; }.shop-action-button:disabled { cursor: not-allowed; opacity: .42; }.empty-shop { grid-column: 1 / -1; margin: 0; color: #81909d; font-family: system-ui, sans-serif; font-size: 13px; }
+.shop-controls { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }.shop-controls .ghost-button:disabled { cursor: not-allowed; opacity: .48; }.shop-removal-block { margin-top: 21px; padding-top: 17px; border-top: 1px solid #293846; }.removal-card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }.removal-card { position: relative; display: flex; min-height: 68px; flex-direction: column; align-items: flex-start; padding: 10px; text-align: left; color: #d8c9ae; border: 1px solid #394a58; background: #182632; }.removal-card:hover:not(:disabled) { border-color: #df8b7a; background: #2b272b; }.removal-card:disabled { cursor: not-allowed; opacity: .48; }.removal-card span { padding-right: 15px; font-size: 12px; }.removal-card small { margin-top: 5px; color: #81909d; font-family: system-ui, sans-serif; font-size: 10px; }.removal-card svg { position: absolute; top: 10px; right: 9px; color: #df8b7a; }.shop-hint { margin: 9px 0 0; color: #dfb0a5; font-family: system-ui, sans-serif; font-size: 11px; }.special-removal-grid { margin-bottom: 16px; }
 
 @media (max-width: 640px) {
   .origin-grid, .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -162,7 +180,7 @@ h1, h2, p { margin-top: 0; }
   .restore-button { width: 100%; }
   .route-heading { flex-direction: column; gap: 8px; }.route-progress { align-self: flex-start; }
   .route-node { min-height: 70px; }.route-node strong { font-size: 11px; }.route-legend { gap: 9px; }
-  .build-card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.reward-grid { grid-template-columns: 1fr; }.reward-card { min-height: 175px; }
+  .build-card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }.build-stats-layout { grid-template-columns: 1fr; }.synergy-grid { grid-template-columns: 1fr 1fr; }.reward-grid { grid-template-columns: 1fr; }.reward-card { min-height: 175px; }.shop-offer-grid { grid-template-columns: 1fr; }.shop-offer { min-height: 195px; }.removal-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reward-heading { flex-direction: column; gap: 7px; }.reward-tip { white-space: normal; }
-  .upgrade-grid { grid-template-columns: 1fr; }.upgrade-heading { flex-direction: column; gap: 7px; }.upgrade-stones { white-space: normal; }
+  .upgrade-grid { grid-template-columns: 1fr; }.upgrade-heading, .shop-heading { flex-direction: column; gap: 7px; }.upgrade-stones, .shop-stones { white-space: normal; }
 }

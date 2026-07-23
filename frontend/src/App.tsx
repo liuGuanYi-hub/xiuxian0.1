@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowRight, Coins, Compass, Download, Flame, Heart, Hourglass, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
-import { chooseEvent, claimReward, enterNode, restoreRun, skipUpgrade, startRun, upgradeCard } from './api'
-import type { GameRun, MapNode, RewardOffer } from './types'
+import { ArrowRight, Coins, Compass, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, ShoppingBag, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
+import { buyShopOffer, chooseEvent, claimReward, enterNode, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
+import type { BuildStats, GameRun, MapNode, RemovalState, RewardOffer, ShopState } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -103,6 +103,71 @@ function App() {
       setRun(await skipUpgrade(run.id))
     } catch (err) {
       setError(err instanceof Error ? err.message : '无法结束闭关。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function buyOffer(offerId: string) {
+    if (!run || run.status !== 'RUNNING' || !run.shop) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await buyShopOffer(run.id, offerId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '坊市购买失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function refreshCurrentShop() {
+    if (!run || run.status !== 'RUNNING' || !run.shop) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await refreshShop(run.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '坊市刷新失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function removeCard(cardId: string) {
+    if (!run || run.status !== 'RUNNING') return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await (run.shop ? removeShopCard(run.id, cardId) : removeSpecialCard(run.id, cardId)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '卡牌移除失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function leaveCurrentShop() {
+    if (!run || run.status !== 'RUNNING' || !run.shop) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await leaveShop(run.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '离开坊市失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function skipCurrentRemoval() {
+    if (!run || run.status !== 'RUNNING' || !run.removal) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await skipSpecialRemoval(run.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '暂不移除卡牌。')
     } finally {
       setLoading(false)
     }
@@ -218,6 +283,7 @@ function App() {
       </section>
 
       <BuildPanel cards={run.build} />
+      <BuildStatsPanel stats={run.buildStats} />
 
       {run.rewardOffers.length > 0 && (
         <RewardPanel offers={run.rewardOffers} loading={loading} onClaim={(rewardId) => void claimBuildReward(rewardId)} />
@@ -233,7 +299,30 @@ function App() {
         />
       )}
 
-      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !activeNode && (
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && run.shop && (
+        <ShopPanel
+          shop={run.shop}
+          build={run.build}
+          spiritStones={run.spiritStones}
+          loading={loading}
+          onBuy={(offerId) => void buyOffer(offerId)}
+          onRefresh={() => void refreshCurrentShop()}
+          onRemove={(cardId) => void removeCard(cardId)}
+          onLeave={() => void leaveCurrentShop()}
+        />
+      )}
+
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !run.shop && run.removal && (
+        <RemovalPanel
+          removal={run.removal}
+          spiritStones={run.spiritStones}
+          loading={loading}
+          onRemove={(cardId) => void removeCard(cardId)}
+          onSkip={() => void skipCurrentRemoval()}
+        />
+      )}
+
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !run.shop && !run.removal && !activeNode && (
         <RouteMapPanel run={run} loading={loading} onEnter={(nodeId) => void enter(nodeId)} />
       )}
 
@@ -337,6 +426,7 @@ function BuildPanel({ cards }: { cards: GameRun['build'] }) {
           <article className={'build-card ' + card.rarity} key={card.id}>
             <div className="build-card-topline">
               <span className="card-category">{card.category}</span>
+              <span className="card-archetype">{card.archetype}</span>
               <span className="card-level">Lv.{card.upgradeLevel + 1}</span>
               <span className={'rarity-badge ' + card.rarity}>{card.rarity}</span>
             </div>
@@ -347,6 +437,138 @@ function BuildPanel({ cards }: { cards: GameRun['build'] }) {
       </div>
     </section>
   )
+}
+
+function BuildStatsPanel({ stats }: { stats: BuildStats }) {
+  const categories = ['功法', '法宝', '符箓']
+  const archetypes = ['剑修', '丹修', '体修', '鬼修']
+  return (
+    <section className="build-stats-panel">
+      <div className="section-heading">
+        <span>构筑详情 <small className="build-count">{stats.activeCards} 张有效卡</small></span>
+        <small>只统计 ACTIVE 卡牌</small>
+      </div>
+      <div className="build-stats-layout">
+        <div className="build-counts-block">
+          <div className="stats-block-title"><Layers size={15} />卡牌构成</div>
+          <div className="count-grid">
+            {categories.map((category) => <div className="count-item" key={category}><strong>{stats.categoryCounts[category] ?? 0}</strong><small>{category}</small></div>)}
+          </div>
+          <div className="archetype-counts">
+            {archetypes.map((archetype) => <span key={archetype}>{archetype} <b>{stats.archetypeCounts[archetype] ?? 0}</b></span>)}
+          </div>
+        </div>
+        <div className="synergy-block">
+          <div className="stats-block-title"><Sparkles size={15} />流派协同</div>
+          <div className="synergy-grid">
+            {stats.synergies.map((synergy) => (
+              <article className={`synergy-item ${synergy.active ? 'active' : ''}`} key={synergy.archetype}>
+                <div><strong>{synergy.archetype}</strong><span>{synergy.count} 张</span></div>
+                <small>{synergy.active ? synergy.effectText : '再获得一张即可激活协同'}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="battle-bonus-row">
+        <span><Heart size={14} />战斗气血 +{stats.battleHealthBonus}</span>
+        <span><Flame size={14} />战斗灵力 +{stats.battleSpiritBonus}</span>
+        <span><Hourglass size={14} />战斗寿元 {formatSigned(stats.battleLifespanBonus)}</span>
+        <span><Sparkles size={14} />战斗因果 {formatSigned(stats.battleKarmaBonus)}</span>
+      </div>
+    </section>
+  )
+}
+
+function ShopPanel({ shop, build, spiritStones, loading, onBuy, onRefresh, onRemove, onLeave }: {
+  shop: ShopState
+  build: GameRun['build']
+  spiritStones: number
+  loading: boolean
+  onBuy: (offerId: string) => void
+  onRefresh: () => void
+  onRemove: (cardId: string) => void
+  onLeave: () => void
+}) {
+  const canRefresh = shop.refreshCount < shop.refreshLimit && shop.nextRefreshCost > 0 && spiritStones >= shop.nextRefreshCost
+  const canRemove = !shop.removalUsed && spiritStones >= shop.removalCost && build.length > 1
+  return (
+    <section className="shop-panel">
+      <div className="shop-heading">
+        <div>
+          <p className="event-kicker"><ShoppingBag size={14} />坊市 · 构筑整理</p>
+          <h2>挑选你的修行资源</h2>
+        </div>
+        <span className="shop-stones"><Coins size={14} />{spiritStones} 灵石</span>
+      </div>
+      <p className="route-description">购买会立即加入构筑；刷新会替换当前未购买商品。坊市移除卡牌消耗服务端标记的灵石，且每个坊市仅限一次。</p>
+      <div className="shop-offer-grid">
+        {shop.offers.length === 0 ? <p className="empty-shop">商品已售罄，可以离开坊市继续赶路。</p> : shop.offers.map((offer) => (
+          <article className={`shop-offer ${offer.rarity}`} key={offer.id}>
+            <div className="reward-card-topline"><span>{offer.category} · {offer.archetype}</span><span className={`rarity-badge ${offer.rarity}`}>{offer.rarity}</span></div>
+            <strong>{offer.name}</strong>
+            <p>{offer.description}</p>
+            <small>{offer.effectText}</small>
+            <button className="shop-action-button" disabled={loading || spiritStones < offer.price} onClick={() => onBuy(offer.id)} type="button">
+              <Coins size={14} />{offer.price} 灵石 · 购买
+            </button>
+          </article>
+        ))}
+      </div>
+      <div className="shop-controls">
+        <button className="ghost-button" disabled={loading || !canRefresh} onClick={onRefresh} type="button">
+          <RefreshCw size={14} />{shop.refreshCount >= shop.refreshLimit ? '刷新次数已用尽' : `刷新 · ${shop.nextRefreshCost} 灵石 (${shop.refreshCount}/${shop.refreshLimit})`}
+        </button>
+        <button className="ghost-button" disabled={loading} onClick={onLeave} type="button">离开坊市</button>
+      </div>
+      <div className="shop-removal-block">
+        <div className="stats-block-title"><Trash2 size={15} />坊市移除 <small>每个坊市一次 · {shop.removalCost} 灵石</small></div>
+        <div className="removal-card-grid">
+          {build.map((card) => (
+            <button className="removal-card" disabled={loading || !canRemove} key={card.id} onClick={() => onRemove(card.id)} type="button">
+              <span>{card.name}</span><small>{card.archetype} · Lv.{card.upgradeLevel + 1}</small><Trash2 size={13} />
+            </button>
+          ))}
+        </div>
+        {build.length <= 1 && <p className="shop-hint">不能移除最后一张有效卡牌。</p>}
+        {shop.removalUsed && <p className="shop-hint">本次坊市已经移除过卡牌。</p>}
+      </div>
+    </section>
+  )
+}
+
+function RemovalPanel({ removal, spiritStones, loading, onRemove, onSkip }: {
+  removal: RemovalState
+  spiritStones: number
+  loading: boolean
+  onRemove: (cardId: string) => void
+  onSkip: () => void
+}) {
+  return (
+    <section className="removal-panel">
+      <div className="shop-heading">
+        <div>
+          <p className="event-kicker"><Trash2 size={14} />特殊事件 · 因果清理</p>
+          <h2>{removal.title}</h2>
+        </div>
+        <span className="shop-stones">{removal.cost === 0 ? '免费一次' : `${removal.cost} 灵石`}</span>
+      </div>
+      <p className="route-description">选择一张卡牌移出本局构筑。记录会保留在存档历史中，但移除后的卡牌不再提供战斗加成或流派协同。</p>
+      <div className="removal-card-grid special-removal-grid">
+        {removal.options.map((card) => (
+          <button className="removal-card" disabled={loading || spiritStones < removal.cost} key={card.id} onClick={() => onRemove(card.id)} type="button">
+            <span>{card.name}</span><small>{card.archetype} · {card.category}</small><Trash2 size={14} />
+          </button>
+        ))}
+      </div>
+      {removal.options.length <= 1 && <p className="shop-hint">当前只剩一张有效卡牌，不能移除最后一张。</p>}
+      <button className="ghost-button" disabled={loading} onClick={onSkip} type="button">保留这张卡，继续赶路</button>
+    </section>
+  )
+}
+
+function formatSigned(value: number) {
+  return value > 0 ? `+${value}` : `${value}`
 }
 
 function UpgradePanel({ cards, spiritStones, loading, onUpgrade, onSkip }: {

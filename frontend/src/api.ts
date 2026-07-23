@@ -52,6 +52,42 @@ export function skipUpgrade(runId: string) {
   })
 }
 
+export function removeSpecialCard(runId: string, cardId: string) {
+  return request<GameRun>(`/game/runs/${runId}/removals/${cardId}`, {
+    method: 'POST',
+  })
+}
+
+export function skipSpecialRemoval(runId: string) {
+  return request<GameRun>(`/game/runs/${runId}/removals/skip`, {
+    method: 'POST',
+  })
+}
+
+export function buyShopOffer(runId: string, offerId: string) {
+  return request<GameRun>(`/game/runs/${runId}/shops/${offerId}/buy`, {
+    method: 'POST',
+  })
+}
+
+export function refreshShop(runId: string) {
+  return request<GameRun>(`/game/runs/${runId}/shops/refresh`, {
+    method: 'POST',
+  })
+}
+
+export function removeShopCard(runId: string, cardId: string) {
+  return request<GameRun>(`/game/runs/${runId}/shops/remove/${cardId}`, {
+    method: 'POST',
+  })
+}
+
+export function leaveShop(runId: string) {
+  return request<GameRun>(`/game/runs/${runId}/shops/leave`, {
+    method: 'POST',
+  })
+}
+
 export function restoreRun(runId: string) {
   return request<GameRun>(`/game/runs/${encodeURIComponent(runId.trim())}`)
 }

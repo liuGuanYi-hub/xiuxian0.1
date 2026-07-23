@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.util.List;
+import java.util.Map;
 
 public final class GameDtos {
 
@@ -41,12 +42,36 @@ public final class GameDtos {
     public record EndingView(String id, String title, String description) {
     }
 
-    public record BuildCardView(String id, String cardId, String category, String name,
-                                String rarity, String description, String effectText, int upgradeLevel) {
+    public record BuildCardView(String id, String cardId, String category, String archetype,
+                                String name, String rarity, String description, String effectText,
+                                int upgradeLevel) {
     }
 
-    public record RewardOfferView(String id, String cardId, String category, String name,
-                                  String rarity, String description, String effectText) {
+    public record RewardOfferView(String id, String cardId, String category, String archetype,
+                                  String name, String rarity, String description, String effectText) {
+    }
+
+    public record ShopOfferView(String id, String cardId, String category, String archetype,
+                                String name, String rarity, String description, String effectText,
+                                int price) {
+    }
+
+    public record ShopView(String id, String nodeId, int refreshCount, int refreshLimit,
+                           int nextRefreshCost, int removalCost, boolean removalUsed,
+                           List<ShopOfferView> offers) {
+    }
+
+    public record RemovalView(String source, String title, int cost, List<BuildCardView> options) {
+    }
+
+    public record SynergyView(String archetype, String title, int count, boolean active,
+                              String effectText) {
+    }
+
+    public record BuildStatsView(int activeCards, Map<String, Integer> categoryCounts,
+                                 Map<String, Integer> archetypeCounts, List<SynergyView> synergies,
+                                 int battleHealthBonus, int battleSpiritBonus,
+                                 int battleLifespanBonus, int battleKarmaBonus) {
     }
 
     public record GameRunView(
@@ -67,8 +92,11 @@ public final class GameDtos {
             RouteMapView map,
             EndingView ending,
             List<BuildCardView> build,
+            BuildStatsView buildStats,
             List<BuildCardView> upgradeOptions,
             List<RewardOfferView> rewardOffers,
+            ShopView shop,
+            RemovalView removal,
             List<String> logs
     ) {
     }

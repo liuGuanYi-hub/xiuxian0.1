@@ -22,9 +22,21 @@
 - 初始功法/符箓构筑，战斗、精英和秘境节点提供奖励三选一
 - 卡牌效果会影响后续战斗结算，奖励选择支持存档恢复
 - 灵石资源与休息/闭关节点卡牌升级，升级状态支持存档恢复
+- 卡牌移除：坊市消耗 30 灵石一次，天关黑市特殊事件免费一次，保留 REMOVED 历史
+- 坊市 3 张商品、普通/稀有/传说 20/35/55 灵石定价，刷新费用 10/15 灵石且最多 2 次
+- 剑修、丹修、体修、鬼修 2 卡基础/3 卡强化流派协同
+- 条件化奖励池：精英、楼层、节点稀有度、事件稀有度和当前流派都会影响权重
+- 构筑统计面板：卡牌类别、流派数量、协同说明和战斗主要加成
+- 17 张卡牌通过 `card-config.json` 幂等初始化到 `skill_config`、`item_config`、`talisman_config`
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
 - React 前端展示路线图、节点连线、当前事件和修仙日志
+
+## V0.4 界面预览
+
+构筑统计、流派协同与每局随机路线图：
+
+![V0.4 构筑统计与随机路线图](./output/playwright/v04-build-stats-full.png)
 
 ## 启动数据库
 
@@ -70,6 +82,14 @@ npm run dev
 | POST | `/api/game/runs/{id}/rewards/{rewardId}/claim` | 领取一张构筑奖励并解锁路线 |
 | POST | `/api/game/runs/{id}/upgrades/{cardId}` | 在闭关节点消耗灵石升级卡牌 |
 | POST | `/api/game/runs/{id}/upgrades/skip` | 跳过本次闭关升级并解锁路线 |
+| POST | `/api/game/runs/{id}/removals/{cardId}` | 特殊事件免费移除一张有效卡牌 |
+| POST | `/api/game/runs/{id}/removals/skip` | 跳过特殊事件移除 |
+| POST | `/api/game/runs/{id}/shops/{offerId}/buy` | 购买坊市商品并加入构筑 |
+| POST | `/api/game/runs/{id}/shops/refresh` | 消耗递增灵石刷新坊市 |
+| POST | `/api/game/runs/{id}/shops/remove/{cardId}` | 消耗 30 灵石移除坊市卡牌 |
+| POST | `/api/game/runs/{id}/shops/leave` | 关闭坊市并解锁下一层 |
+
+完整请求/响应字段说明见：[API.md](./API.md)；V0.4 逐项验收见：[V0.4_ACCEPTANCE.md](./V0.4_ACCEPTANCE.md)。
 
 ## 默认数据库配置
 

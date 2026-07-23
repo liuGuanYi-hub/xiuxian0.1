@@ -2,6 +2,13 @@ package com.xiuxian.roguelike;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiuxian.roguelike.domain.GameRunEntity;
+import com.xiuxian.roguelike.domain.RunMapNodeEntity;
+import com.xiuxian.roguelike.repository.GameRunRepository;
+import com.xiuxian.roguelike.repository.ItemConfigRepository;
+import com.xiuxian.roguelike.repository.RunMapNodeRepository;
+import com.xiuxian.roguelike.repository.SkillConfigRepository;
+import com.xiuxian.roguelike.repository.TalismanConfigRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,6 +18,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +41,21 @@ class GameControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SkillConfigRepository skillConfigRepository;
+
+    @Autowired
+    private ItemConfigRepository itemConfigRepository;
+
+    @Autowired
+    private TalismanConfigRepository talismanConfigRepository;
+
+    @Autowired
+    private GameRunRepository gameRunRepository;
+
+    @Autowired
+    private RunMapNodeRepository runMapNodeRepository;
 
     @Test
     void startRunGeneratesConnectedSeedMap() throws Exception {
@@ -83,6 +108,99 @@ class GameControllerTest {
         assertEquals(0, claimed.get("rewardOffers").size());
         assertEquals(3, claimed.get("build").size());
         assertTrue(countByStatus(claimed.get("map").get("nodes"), "AVAILABLE") > 0);
+    }
+
+    @Test
+    void configSeedsSeventeenCardsAndStarterActivatesDanCultivatorSynergy() throws Exception {
+        assertEquals(17, skillConfigRepository.count() + itemConfigRepository.count() + talismanConfigRepository.count());
+
+        JsonNode started = objectMapper.readTree(startRun());
+        assertEquals(2, started.get("buildStats").get("archetypeCounts").get("丹修").asInt());
+        JsonNode danSynergy = findSynergy(started.get("buildStats").get("synergies"), "丹修");
+        assertTrue(danSynergy.get("active").asBoolean());
+        assertEquals(5, started.get("buildStats").get("battleSpiritBonus").asInt());
+        assertTrue(started.get("build").get(0).has("archetype"));
+    }
+
+    @Test
+    void shopCanBuyRefreshRemoveAndRestoreState() throws Exception {
+        JsonNode current = objectMapper.readTree(startRun());
+        String runId = current.get("id").asText();
+        current = advanceToNodeType(runId, current, "SHOP");
+        current = objectMapper.readTree(choose(runId, 0, UUID.randomUUID().toString()));
+
+        assertEquals(3, current.get("shop").get("offers").size());
+        JsonNode firstOffer = current.get("shop").get("offers").get(0);
+        String shopNodeId = current.get("shop").get("nodeId").asText();
+        assertEquals("普通", firstOffer.get("rarity").asText());
+        assertEquals(20, firstOffer.get("price").asInt());
+        int activeCardsBeforeBuy = current.get("buildStats").get("activeCards").asInt();
+
+        current = buyShopOffer(runId, firstOffer.get("id").asText());
+        assertEquals(40, current.get("spiritStones").asInt());
+        assertEquals(activeCardsBeforeBuy + 1, current.get("buildStats").get("activeCards").asInt());
+
+        current = refreshShop(runId);
+        assertEquals(1, current.get("shop").get("refreshCount").asInt());
+        assertEquals(15, current.get("shop").get("nextRefreshCost").asInt());
+        assertEquals(30, current.get("spiritStones").asInt());
+
+        String cardId = current.get("build").get(0).get("id").asText();
+        current = removeShopCard(runId, cardId);
+        assertEquals(0, current.get("spiritStones").asInt());
+        assertEquals(activeCardsBeforeBuy, current.get("buildStats").get("activeCards").asInt());
+        assertTrue(current.get("shop").get("removalUsed").asBoolean());
+
+        JsonNode restored = objectMapper.readTree(mockMvc.perform(get("/api/game/runs/{id}", runId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(1, restored.get("shop").get("refreshCount").asInt());
+        assertTrue(restored.get("shop").get("removalUsed").asBoolean());
+        assertEquals(activeCardsBeforeBuy, restored.get("buildStats").get("activeCards").asInt());
+
+        current = leaveShop(runId);
+        assertEquals(activeCardsBeforeBuy, current.get("buildStats").get("activeCards").asInt());
+        assertEquals("CLEARED", findNode(current.get("map").get("nodes"), shopNodeId).get("status").asText());
+    }
+
+    @Test
+    void shopRefreshUsesTenThenFifteenSpiritStonesAndStopsAtTwo() throws Exception {
+        JsonNode current = objectMapper.readTree(startRun());
+        String runId = current.get("id").asText();
+        current = advanceToNodeType(runId, current, "SHOP");
+        current = objectMapper.readTree(choose(runId, 0, UUID.randomUUID().toString()));
+
+        current = refreshShop(runId);
+        assertEquals(50, current.get("spiritStones").asInt());
+        current = refreshShop(runId);
+        assertEquals(35, current.get("spiritStones").asInt());
+        assertEquals(2, current.get("shop").get("refreshCount").asInt());
+        assertEquals(0, current.get("shop").get("nextRefreshCost").asInt());
+
+        mockMvc.perform(post("/api/game/runs/{id}/shops/refresh", runId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("本次坊市已经没有刷新次数了。"));
+    }
+
+    @Test
+    void specialEventRemovalIsFreeAndLeavesHistoryBackedActiveCount() throws Exception {
+        JsonNode started = objectMapper.readTree(startRun());
+        String runId = started.get("id").asText();
+        GameRunEntity run = gameRunRepository.findById(runId).orElseThrow();
+        RunMapNodeEntity node = runMapNodeRepository.findByRunIdOrderByFloorAscPositionAsc(runId).get(0);
+        run.setPendingRemovalNode(node.getId());
+        node.markRemovalPending();
+        gameRunRepository.save(run);
+        runMapNodeRepository.save(node);
+
+        String cardId = started.get("build").get(0).get("id").asText();
+        JsonNode removed = objectMapper.readTree(mockMvc.perform(post("/api/game/runs/{id}/removals/{cardId}", runId, cardId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(60, removed.get("spiritStones").asInt());
+        assertEquals(1, removed.get("buildStats").get("activeCards").asInt());
+        assertTrue(removed.get("removal").isNull());
+        assertEquals("CLEARED", findNode(removed.get("map").get("nodes"), node.getId()).get("status").asText());
     }
 
     @Test
@@ -161,6 +279,14 @@ class GameControllerTest {
                 current = skipUpgrade(runId);
                 continue;
             }
+            if (!current.get("shop").isNull()) {
+                current = leaveShop(runId);
+                continue;
+            }
+            if (!current.get("removal").isNull()) {
+                current = skipSpecialRemoval(runId);
+                continue;
+            }
             if (!current.get("currentNodeId").asText().isBlank()) {
                 current = objectMapper.readTree(choose(runId, 2, UUID.randomUUID().toString()));
                 continue;
@@ -213,6 +339,24 @@ class GameControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
+    private JsonNode leaveShop(String runId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/shops/leave", runId))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode view = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertTrue(view.get("shop") == null || view.get("shop").isNull());
+        return view;
+    }
+
+    private JsonNode skipSpecialRemoval(String runId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/removals/skip", runId))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode view = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertTrue(view.get("removal") == null || view.get("removal").isNull());
+        return view;
+    }
+
     private JsonNode enterNode(String runId, String nodeId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/nodes/{nodeId}/enter", runId, nodeId))
                 .andExpect(status().isOk())
@@ -233,6 +377,97 @@ class GameControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode buyShopOffer(String runId, String offerId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/shops/{offerId}/buy", runId, offerId))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode refreshShop(String runId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/shops/refresh", runId))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode removeShopCard(String runId, String cardId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/shops/remove/{cardId}", runId, cardId))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode advanceToNodeType(String runId, JsonNode current, String type) throws Exception {
+        JsonNode target = firstNodeByType(current.get("map").get("nodes"), type);
+        assertTrue(target != null, "路线图应该包含目标节点：" + type);
+        for (int step = 0; step < 24; step++) {
+            assertEquals("RUNNING", current.get("status").asText(), "前往目标节点的过程中不应提前结束");
+            if (current.get("rewardOffers").size() > 0) {
+                current = claimFirstReward(runId, current);
+                continue;
+            }
+            if (current.get("upgradeOptions").size() > 0) {
+                current = skipUpgrade(runId);
+                continue;
+            }
+            if (!current.get("shop").isNull()) {
+                current = leaveShop(runId);
+                continue;
+            }
+            if (!current.get("removal").isNull()) {
+                current = skipSpecialRemoval(runId);
+                continue;
+            }
+            if (!current.get("currentNodeId").asText().isBlank()) {
+                current = objectMapper.readTree(choose(runId, 2, UUID.randomUUID().toString()));
+                continue;
+            }
+
+            JsonNode targetState = findNode(current.get("map").get("nodes"), target.get("id").asText());
+            if (targetState != null && "AVAILABLE".equals(targetState.get("status").asText())) {
+                return enterNode(runId, target.get("id").asText());
+            }
+            JsonNode next = firstAvailableToward(current.get("map").get("nodes"), target.get("id").asText());
+            assertTrue(next != null, "目标节点应该存在可达的相邻路径：" + type);
+            current = enterNode(runId, next.get("id").asText());
+        }
+        throw new AssertionError("在测试步数内没有抵达目标节点：" + type);
+    }
+
+    private JsonNode firstAvailableToward(JsonNode nodes, String targetId) {
+        for (JsonNode node : nodes) {
+            if ("AVAILABLE".equals(node.get("status").asText()) && canReach(nodes, node.get("id").asText(), targetId)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private boolean canReach(JsonNode nodes, String fromId, String targetId) {
+        ArrayDeque<String> queue = new ArrayDeque<>();
+        Set<String> visited = new HashSet<>();
+        queue.add(fromId);
+        while (!queue.isEmpty()) {
+            String currentId = queue.removeFirst();
+            if (!visited.add(currentId)) continue;
+            if (targetId.equals(currentId)) return true;
+            JsonNode current = findNode(nodes, currentId);
+            if (current == null) continue;
+            for (JsonNode next : current.get("nextNodeIds")) {
+                queue.addLast(next.asText());
+            }
+        }
+        return false;
+    }
+
+    private JsonNode findSynergy(JsonNode synergies, String archetype) {
+        for (JsonNode synergy : synergies) {
+            if (archetype.equals(synergy.get("archetype").asText())) return synergy;
+        }
+        return null;
     }
 
     private String choose(String runId, int choiceIndex, String requestId) throws Exception {

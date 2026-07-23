@@ -20,7 +20,7 @@ export type MapNode = {
   type: string
   label: string
   rarity: string
-  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'REWARD' | 'UPGRADE' | 'CLEARED'
+  status: 'LOCKED' | 'AVAILABLE' | 'ACTIVE' | 'REWARD' | 'UPGRADE' | 'SHOP' | 'REMOVAL' | 'CLEARED'
   nextNodeIds: string[]
 }
 
@@ -39,6 +39,7 @@ export type BuildCard = {
   id: string
   cardId: string
   category: string
+  archetype: string
   name: string
   rarity: string
   description: string
@@ -47,6 +48,48 @@ export type BuildCard = {
 }
 
 export type RewardOffer = Omit<BuildCard, 'upgradeLevel'>
+
+export type ShopOffer = Omit<RewardOffer, 'id'> & {
+  id: string
+  price: number
+}
+
+export type ShopState = {
+  id: string
+  nodeId: string
+  refreshCount: number
+  refreshLimit: number
+  nextRefreshCost: number
+  removalCost: number
+  removalUsed: boolean
+  offers: ShopOffer[]
+}
+
+export type RemovalState = {
+  source: string
+  title: string
+  cost: number
+  options: BuildCard[]
+}
+
+export type Synergy = {
+  archetype: string
+  title: string
+  count: number
+  active: boolean
+  effectText: string
+}
+
+export type BuildStats = {
+  activeCards: number
+  categoryCounts: Record<string, number>
+  archetypeCounts: Record<string, number>
+  synergies: Synergy[]
+  battleHealthBonus: number
+  battleSpiritBonus: number
+  battleLifespanBonus: number
+  battleKarmaBonus: number
+}
 
 export type GameRun = {
   id: string
@@ -66,7 +109,10 @@ export type GameRun = {
   map: RouteMap
   ending: Ending | null
   build: BuildCard[]
+  buildStats: BuildStats
   upgradeOptions: BuildCard[]
   rewardOffers: RewardOffer[]
+  shop: ShopState | null
+  removal: RemovalState | null
   logs: string[]
 }

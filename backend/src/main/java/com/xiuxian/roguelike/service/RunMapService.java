@@ -132,6 +132,9 @@ public class RunMapService {
         if (floor == 1 && position == 1) {
             return "REST";
         }
+        if (floor == 3 && position == 0) {
+            return "SHOP";
+        }
         if (floor == TOTAL_FLOORS - 1) {
             return "BOSS";
         }

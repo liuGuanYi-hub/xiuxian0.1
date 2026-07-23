@@ -97,6 +97,14 @@ public class RunMapNodeEntity {
         this.status = "UPGRADE";
     }
 
+    public void markShopPending() {
+        this.status = "SHOP";
+    }
+
+    public void markRemovalPending() {
+        this.status = "REMOVAL";
+    }
+
     public void unlock() {
         if ("LOCKED".equals(this.status)) {
             this.status = "AVAILABLE";

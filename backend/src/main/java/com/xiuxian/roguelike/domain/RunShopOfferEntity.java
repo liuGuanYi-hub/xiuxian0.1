@@ -10,23 +10,29 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "run_build_item", indexes = {
-        @Index(name = "idx_build_item_run", columnList = "run_id,created_at")
+@Table(name = "run_shop_offer", indexes = {
+        @Index(name = "idx_shop_offer_shop_status", columnList = "shop_id,status,slot_number")
 })
-public class BuildItemEntity {
+public class RunShopOfferEntity {
 
     @Id
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
+    @Column(name = "shop_id", nullable = false, length = 36)
+    private String shopId;
+
     @Column(name = "run_id", nullable = false, length = 36)
     private String runId;
 
-    @Column(nullable = false, length = 60)
+    @Column(name = "card_id", nullable = false, length = 60)
     private String cardId;
 
     @Column(nullable = false, length = 20)
     private String category;
+
+    @Column(nullable = false, length = 20)
+    private String archetype;
 
     @Column(nullable = false, length = 80)
     private String name;
@@ -40,55 +46,59 @@ public class BuildItemEntity {
     @Column(name = "effect_text", nullable = false, length = 240)
     private String effectText;
 
-    @Column(name = "source_node_id", length = 36)
-    private String sourceNodeId;
+    @Column(nullable = false)
+    private int price;
 
-    @Column(name = "upgrade_level", nullable = false)
-    private int upgradeLevel;
+    @Column(name = "slot_number", nullable = false)
+    private int slot;
 
-    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'ACTIVE'")
+    @Column(nullable = false)
+    private int generation;
+
+    @Column(nullable = false, length = 20)
     private String status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    protected BuildItemEntity() {
+    protected RunShopOfferEntity() {
     }
 
-    public BuildItemEntity(String runId, String cardId, String category, String name, String rarity,
-                           String description, String effectText, String sourceNodeId) {
+    public RunShopOfferEntity(String shopId, String runId, String cardId, String category,
+                              String archetype, String name, String rarity, String description,
+                              String effectText, int price, int slot, int generation) {
         this.id = UUID.randomUUID().toString();
+        this.shopId = shopId;
         this.runId = runId;
         this.cardId = cardId;
         this.category = category;
+        this.archetype = archetype;
         this.name = name;
         this.rarity = rarity;
         this.description = description;
         this.effectText = effectText;
-        this.sourceNodeId = sourceNodeId;
-        this.upgradeLevel = 0;
+        this.price = price;
+        this.slot = slot;
+        this.generation = generation;
         this.status = "ACTIVE";
         this.createdAt = LocalDateTime.now();
     }
 
     public String getId() { return id; }
+    public String getShopId() { return shopId; }
     public String getRunId() { return runId; }
     public String getCardId() { return cardId; }
     public String getCategory() { return category; }
+    public String getArchetype() { return archetype; }
     public String getName() { return name; }
     public String getRarity() { return rarity; }
     public String getDescription() { return description; }
     public String getEffectText() { return effectText; }
-    public String getSourceNodeId() { return sourceNodeId; }
-    public int getUpgradeLevel() { return upgradeLevel; }
+    public int getPrice() { return price; }
+    public int getSlot() { return slot; }
+    public int getGeneration() { return generation; }
     public String getStatus() { return status; }
-    public boolean isActive() { return "ACTIVE".equals(status); }
 
-    public void upgrade() {
-        this.upgradeLevel += 1;
-    }
-
-    public void remove() {
-        this.status = "REMOVED";
-    }
+    public void markSold() { this.status = "SOLD"; }
+    public void expire() { this.status = "EXPIRED"; }
 }
