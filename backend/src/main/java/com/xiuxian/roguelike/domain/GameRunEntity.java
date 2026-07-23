@@ -49,6 +49,15 @@ public class GameRunEntity {
     @Column(nullable = false, length = 80)
     private String currentEventId;
 
+    @Column(nullable = false, length = 36)
+    private String currentNodeId;
+
+    @Column(nullable = false)
+    private int currentFloor;
+
+    @Column(length = 40)
+    private String endingId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -74,6 +83,9 @@ public class GameRunEntity {
         this.turn = 0;
         this.status = "RUNNING";
         this.currentEventId = currentEventId;
+        this.currentNodeId = "";
+        this.currentFloor = 0;
+        this.endingId = null;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
@@ -90,9 +102,12 @@ public class GameRunEntity {
     public int getTurn() { return turn; }
     public String getStatus() { return status; }
     public String getCurrentEventId() { return currentEventId; }
+    public String getCurrentNodeId() { return currentNodeId; }
+    public int getCurrentFloor() { return currentFloor; }
+    public String getEndingId() { return endingId; }
 
     public void applyChoice(int healthDelta, int spiritDelta, int lifespanDelta, int karmaDelta,
-                            String nextEventId, String nextRealm, String nextStatus) {
+                            String nextEventId, String nextRealm, String nextStatus, String nextEndingId) {
         this.health = Math.max(0, this.health + healthDelta);
         this.spirit = Math.max(0, this.spirit + spiritDelta);
         this.lifespan = Math.max(0, this.lifespan + lifespanDelta);
@@ -101,7 +116,20 @@ public class GameRunEntity {
         this.currentEventId = nextEventId;
         this.realm = nextRealm;
         this.status = nextStatus;
+        this.endingId = nextEndingId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void enterNode(String nodeId, int floor, String eventId) {
+        this.currentNodeId = nodeId;
+        this.currentFloor = floor;
+        this.currentEventId = eventId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void clearNode() {
+        this.currentNodeId = "";
+        this.currentEventId = "awaiting_node";
         this.updatedAt = LocalDateTime.now();
     }
 }
-

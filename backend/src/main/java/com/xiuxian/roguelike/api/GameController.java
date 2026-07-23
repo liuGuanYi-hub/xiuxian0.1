@@ -39,5 +39,9 @@ public class GameController {
     public GameRunView choose(@PathVariable String id, @Valid @RequestBody ChoiceRequest request) {
         return gameService.choose(id, request);
     }
-}
 
+    @PostMapping("/{id}/nodes/{nodeId}/enter")
+    public GameRunView enterNode(@PathVariable String id, @PathVariable String nodeId) {
+        return gameService.enterNode(id, nodeId);
+    }
+}

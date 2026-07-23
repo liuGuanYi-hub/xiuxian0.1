@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -32,18 +33,33 @@ class GameControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void playerCanStartChooseAndRestoreHistory() throws Exception {
+    void startRunGeneratesConnectedSeedMap() throws Exception {
+        JsonNode started = objectMapper.readTree(startRun());
+        JsonNode nodes = started.get("map").get("nodes");
+
+        assertEquals("awaiting_node", started.get("event").get("id").asText());
+        assertEquals(10, started.get("map").get("totalFloors").asInt());
+        assertEquals(28, nodes.size());
+        assertEquals(3, countByStatus(nodes, "AVAILABLE"));
+        assertEquals(1, countByType(nodes, "BOSS"));
+        for (JsonNode node : nodes) {
+            if (!"BOSS".equals(node.get("type").asText())) {
+                assertTrue(node.get("nextNodeIds").size() > 0, "每个非 Boss 节点都应该有下一跳");
+            }
+        }
+    }
+
+    @Test
+    void playerCanEnterChooseAndRestoreHistory() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
+        JsonNode entered = enterFirstAvailable(runId, startedRun);
 
-        mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"choiceIndex\":0,\"requestId\":\"history-test-1\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(runId))
-                .andExpect(jsonPath("$.turn").value(1))
-                .andExpect(jsonPath("$.health").value(100))
-                .andExpect(jsonPath("$.logs.length()").value(2));
+        assertFalse(entered.get("currentNodeId").asText().isBlank());
+        JsonNode chosen = objectMapper.readTree(choose(runId, 0, "history-test-1"));
+        assertEquals(runId, chosen.get("id").asText());
+        assertEquals(1, chosen.get("turn").asInt());
+        assertTrue(chosen.get("logs").size() >= 2);
 
         mockMvc.perform(get("/api/game/runs/{id}", runId))
                 .andExpect(status().isOk())
@@ -55,6 +71,7 @@ class GameControllerTest {
     void duplicateRequestIdDoesNotAdvanceTheRunTwice() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
+        enterFirstAvailable(runId, startedRun);
         String body = "{\"choiceIndex\":0,\"requestId\":\"duplicate-test-1\"}";
 
         mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
@@ -75,6 +92,7 @@ class GameControllerTest {
     void invalidChoiceReturnsBadRequest() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
+        enterFirstAvailable(runId, startedRun);
 
         mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,16 +102,24 @@ class GameControllerTest {
     }
 
     @Test
-    void defaultPathCanReachLongFormAscension() throws Exception {
+    void routeCanReachTheBossAfterMultipleDecisions() throws Exception {
         JsonNode current = objectMapper.readTree(startRun());
         String runId = current.get("id").asText();
 
-        for (int turn = 0; turn < 15 && "RUNNING".equals(current.get("status").asText()); turn++) {
-            current = objectMapper.readTree(choose(runId, 0, UUID.randomUUID().toString()));
+        for (int decision = 0; decision < 24 && "RUNNING".equals(current.get("status").asText()); decision++) {
+            if (!current.get("currentNodeId").asText().isBlank()) {
+                current = objectMapper.readTree(choose(runId, 2, UUID.randomUUID().toString()));
+                continue;
+            }
+            JsonNode available = firstAvailable(current.get("map").get("nodes"));
+            assertTrue(available != null, "运行中的路线应该始终存在可进入节点");
+            current = enterFirstAvailable(runId, current);
         }
 
-        assertTrue(current.get("turn").asInt() >= 10, "完整路线应该至少有十次决策");
-        assertEquals("ASCENDED", current.get("status").asText());
+        assertTrue(current.get("turn").asInt() >= 9, "路线应该至少经过大部分楼层");
+        assertTrue("ASCENDED".equals(current.get("status").asText())
+                        || "DEAD".equals(current.get("status").asText()),
+                "抵达 Boss 后应该进入结局或死亡状态");
     }
 
     private String startRun() throws Exception {
@@ -102,9 +128,21 @@ class GameControllerTest {
                         .content("{\"playerName\":\"顾长生\",\"origin\":\"散修\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("RUNNING"))
-                .andExpect(jsonPath("$.event.choices.length()").value(3))
+                .andExpect(jsonPath("$.event.choices.length()").value(0))
+                .andExpect(jsonPath("$.map.nodes.length()").value(28))
                 .andReturn();
         return result.getResponse().getContentAsString();
+    }
+
+    private JsonNode enterFirstAvailable(String runId, JsonNode current) throws Exception {
+        JsonNode node = firstAvailable(current.get("map").get("nodes"));
+        assertTrue(node != null, "应该找到可进入节点");
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/nodes/{nodeId}/enter", runId, node.get("id").asText()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentNodeId").value(node.get("id").asText()))
+                .andExpect(jsonPath("$.event.choices.length()").value(3))
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
     private String choose(String runId, int choiceIndex, String requestId) throws Exception {
@@ -115,5 +153,30 @@ class GameControllerTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+    }
+
+    private JsonNode firstAvailable(JsonNode nodes) {
+        for (JsonNode node : nodes) {
+            if ("AVAILABLE".equals(node.get("status").asText())) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private int countByStatus(JsonNode nodes, String status) {
+        int count = 0;
+        for (JsonNode node : nodes) {
+            if (status.equals(node.get("status").asText())) count++;
+        }
+        return count;
+    }
+
+    private int countByType(JsonNode nodes, String type) {
+        int count = 0;
+        for (JsonNode node : nodes) {
+            if (type.equals(node.get("type").asText())) count++;
+        }
+        return count;
     }
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SplittableRandom;
 
 /**
  * 当前阶段的事件内容目录。
@@ -12,6 +13,9 @@ import java.util.Set;
 public final class EventCatalog {
 
     private static final Map<String, EventDefinition> EVENTS = Map.ofEntries(
+            Map.entry("awaiting_node", event(
+                    "awaiting_node", "等待选择", "前方的道路正在因你的选择展开。请先从路线图中选择一个相邻节点。"
+            )),
             Map.entry("river", event(
                     "river", "黑水渡口", "暮色中的黑水河拦住去路。渡船老人不问灵石，只问你是否相信因果。",
                     choice("交出三枚灵石，请老人渡河", "稳妥，但会失去一点修行资源", 0, 5, 0, 1, "herb"),
@@ -114,6 +118,36 @@ public final class EventCatalog {
                     choice("把一件因果深重的物品卖掉", "短期获利，代价由未来承担", 5, 0, -2, -5, "trial_prep"),
                     choice("什么也不买，保留全部底牌", "不依赖外物，只相信自己的选择", 0, 5, 0, 3, "trial_prep")
             )),
+            Map.entry("starfall", event(
+                    "starfall", "星陨荒原", "夜空突然裂开一道缝隙，一颗燃烧的星核坠落在荒原中央。附近的修士都说，那是天道遗落的眼睛。",
+                    choice("靠近星核观察", "灵力会被星火灼烧，但可能看见未来的一角", -12, 12, -1, 5, "ancient_city"),
+                    choice("以阵法封存星火", "把危险机缘变成可以携带的力量", -5, 5, 0, 3, "duel"),
+                    choice("远离坠星之地", "不被天外因果牵连，也不会错过眼前的安全", 3, 0, 0, 0, "seal")
+            )),
+            Map.entry("ancient_city", event(
+                    "ancient_city", "无名古城", "城门上没有文字，城中的石像却都朝着同一个方向跪拜。你的影子在这里比你先走了一步。",
+                    choice("进入城主府", "古城最深的秘密，往往也藏着最深的危险", -14, 10, -2, 7, "dragon_vein"),
+                    choice("寻找城中幸存的灯火", "也许还有人在等一个迟到很久的答案", 4, 3, -2, 5, "ghost"),
+                    choice("拆下城门上的镇魂钉", "破坏旧秩序可以获得力量，也会放出东西", -10, 15, -3, -3, "venom")
+            )),
+            Map.entry("dragon_vein", event(
+                    "dragon_vein", "龙脉裂隙", "大地深处传来龙吟，裂隙里涌出的不是灵石，而是一缕带着古老意志的金色血气。",
+                    choice("引龙血淬体", "体魄会更强，但要承受龙意反噬", -22, 8, -1, 4, "sword_tomb"),
+                    choice("聆听龙脉的记忆", "知道得越多，越难把自己当作普通修士", 0, 14, -2, 8, "vein"),
+                    choice("将裂隙重新封闭", "放弃力量，换取一份天地认可", 8, 0, 1, 10, "inner")
+            )),
+            Map.entry("sword_tomb", event(
+                    "sword_tomb", "万剑冢门", "无数残剑插在黑色山谷里，风吹过时像有万名剑修同时叹息。最深处的一柄剑正在等你。",
+                    choice("拔出无名古剑", "剑会替你斩开一条路，也会要求你付出代价", -20, 12, -2, 4, "heavenly_omen"),
+                    choice("向万剑行礼后离开", "不取不求，反而可能得到剑冢的认可", 5, 5, 0, 7, "thunder"),
+                    choice("以自身剑意回应山谷", "让残剑记住你的名字", -8, 10, -1, 5, "auction")
+            )),
+            Map.entry("heavenly_omen", event(
+                    "heavenly_omen", "天机显圣", "云层中浮出一只巨大的眼睛。它没有开口，却把你所有未完成的因果照得一清二楚。",
+                    choice("请求天机指路", "提前看见一条未来，但会失去一部分自由", 0, 12, -3, 6, "trial_prep"),
+                    choice("遮住天机之眼", "不接受安排，代价是承受天地的注视", -15, 8, -1, -2, "trial_prep"),
+                    choice("向天机献上一段记忆", "换取一次改变命数的机会", 8, 4, -5, 9, "trial_prep")
+            )),
             Map.entry("trial_prep", event(
                     "trial_prep", "筑基天关前", "天门就在云海尽头。最后一夜，你可以整理自己的道心，也可以把一切押在下一步。",
                     choice("稳固根基，准备渡劫", "减少风险，保留较多寿元", 8, -4, -2, 2, "trial"),
@@ -165,6 +199,53 @@ public final class EventCatalog {
             Map.entry("gate", List.of("finish"))
     );
 
+    private static final Map<String, List<WeightedContent>> NODE_CONTENT_POOLS = Map.of(
+            "BATTLE", List.of(
+                    weighted("beast", 60), weighted("duel", 25), weighted("seal", 12), weighted("ancient_city", 3)
+            ),
+            "ELITE", List.of(
+                    weighted("sword_tomb", 35), weighted("dragon_vein", 25), weighted("trial", 25), weighted("heavenly_omen", 15)
+            ),
+            "EVENT", List.of(
+                    weighted("moon", 30), weighted("ghost", 25), weighted("venom", 20), weighted("starfall", 15), weighted("ancient_city", 10)
+            ),
+            "REST", List.of(
+                    weighted("camp", 70), weighted("inner", 20), weighted("trial_prep", 10)
+            ),
+            "SHOP", List.of(
+                    weighted("market", 70), weighted("auction", 20), weighted("cave", 10)
+            ),
+            "TREASURE", List.of(
+                    weighted("cave", 45), weighted("vein", 25), weighted("dragon_vein", 20), weighted("sword_tomb", 10)
+            ),
+            "BOSS", List.of(
+                    weighted("trial", 70), weighted("tribulation", 20), weighted("gate", 10)
+            )
+    );
+
+    private static final Map<String, EventMeta> EVENT_META = Map.ofEntries(
+            Map.entry("starfall", new EventMeta("稀有", false)),
+            Map.entry("ancient_city", new EventMeta("稀有", false)),
+            Map.entry("dragon_vein", new EventMeta("传说", false)),
+            Map.entry("sword_tomb", new EventMeta("稀有", false)),
+            Map.entry("heavenly_omen", new EventMeta("传说", false)),
+            Map.entry("market", new EventMeta("普通", true)),
+            Map.entry("camp", new EventMeta("普通", true)),
+            Map.entry("auction", new EventMeta("稀有", true)),
+            Map.entry("trial", new EventMeta("Boss", false)),
+            Map.entry("tribulation", new EventMeta("Boss", false)),
+            Map.entry("gate", new EventMeta("终局", false))
+    );
+
+    private static final Map<String, EndingDefinition> ENDINGS = Map.of(
+            "heavenly_ascension", endingConfig("heavenly_ascension", "天门飞升", "你以纯粹灵力贯通天门，成为云海之上的新客。"),
+            "red_dust_sage", endingConfig("red_dust_sage", "红尘道君", "你没有斩断人间，反而把一路结下的因果炼成了自己的道。"),
+            "demon_sovereign", endingConfig("demon_sovereign", "逆命魔尊", "你以反噬和执念为薪，踏出了一条无人敢走的逆命之路。"),
+            "free_wanderer", endingConfig("free_wanderer", "逍遥散仙", "你放弃了天门尽头的答案，带着一身故事回到天地之间。"),
+            "causality_breaker", endingConfig("causality_breaker", "断因绝果", "你斩断了所有既定因果，连天道也无法再为你写下结局。"),
+            "fallen_path", endingConfig("fallen_path", "道途断绝", "这一世的寿元和肉身都走到了尽头，但因果簿仍在等待下一次落笔。")
+    );
+
     private EventCatalog() {
     }
 
@@ -174,6 +255,39 @@ public final class EventCatalog {
             throw new IllegalStateException("事件配置不存在：" + id);
         }
         return event;
+    }
+
+    public static EventMeta meta(String id) {
+        return EVENT_META.getOrDefault(id, new EventMeta("普通", false));
+    }
+
+    public static String pickNodeContent(String nodeType, SplittableRandom random) {
+        List<WeightedContent> candidates = NODE_CONTENT_POOLS.getOrDefault(nodeType, NODE_CONTENT_POOLS.get("EVENT"));
+        int totalWeight = candidates.stream().mapToInt(WeightedContent::weight).sum();
+        int roll = random.nextInt(totalWeight);
+        for (WeightedContent candidate : candidates) {
+            roll -= candidate.weight();
+            if (roll < 0) {
+                return candidate.eventId();
+            }
+        }
+        return candidates.get(candidates.size() - 1).eventId();
+    }
+
+    public static EndingDefinition ending(String id) {
+        EndingDefinition ending = ENDINGS.get(id);
+        if (ending == null) {
+            throw new IllegalStateException("结局配置不存在：" + id);
+        }
+        return ending;
+    }
+
+    private static EndingDefinition endingConfig(String id, String title, String description) {
+        return new EndingDefinition(id, title, description);
+    }
+
+    private static WeightedContent weighted(String eventId, int weight) {
+        return new WeightedContent(eventId, weight);
     }
 
     /**
@@ -219,6 +333,15 @@ public final class EventCatalog {
     }
 
     public record EventDefinition(String id, String title, String description, List<ChoiceDefinition> choices) {
+    }
+
+    public record EventMeta(String rarity, boolean repeatable) {
+    }
+
+    public record WeightedContent(String eventId, int weight) {
+    }
+
+    public record EndingDefinition(String id, String title, String description) {
     }
 
     public record ChoiceDefinition(String label, String hint, int healthDelta, int spiritDelta,

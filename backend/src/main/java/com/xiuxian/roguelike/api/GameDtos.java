@@ -27,7 +27,18 @@ public final class GameDtos {
     public record ChoiceView(int index, String label, String hint) {
     }
 
-    public record EventView(String id, String title, String description, List<ChoiceView> choices) {
+    public record EventView(String id, String title, String description, List<ChoiceView> choices,
+                            String rarity, boolean repeatable) {
+    }
+
+    public record MapNodeView(String id, int floor, int position, String type, String label,
+                              String rarity, String status, List<String> nextNodeIds) {
+    }
+
+    public record RouteMapView(int totalFloors, List<MapNodeView> nodes) {
+    }
+
+    public record EndingView(String id, String title, String description) {
     }
 
     public record GameRunView(
@@ -41,7 +52,11 @@ public final class GameDtos {
             int karma,
             int turn,
             String status,
+            String currentNodeId,
+            int currentFloor,
             EventView event,
+            RouteMapView map,
+            EndingView ending,
             List<String> logs
     ) {
     }

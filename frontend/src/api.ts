@@ -28,6 +28,12 @@ export function chooseEvent(runId: string, choiceIndex: number) {
   })
 }
 
+export function enterNode(runId: string, nodeId: string) {
+  return request<GameRun>(`/game/runs/${runId}/nodes/${nodeId}/enter`, {
+    method: 'POST',
+  })
+}
+
 export function restoreRun(runId: string) {
   return request<GameRun>(`/game/runs/${encodeURIComponent(runId.trim())}`)
 }

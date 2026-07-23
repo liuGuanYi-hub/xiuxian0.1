@@ -77,6 +77,44 @@ h1, h2, p { margin-top: 0; }
 .inline-button { margin-left: 18px; padding: 6px 10px; color: #171b20; background: #d8ad69; font-family: system-ui, sans-serif; font-size: 12px; }
 .game-error { margin: 18px 0; }.log-card { margin-top: 18px; padding: 22px 26px; border: 1px solid #293846; background: #131e29; }.section-heading { display: flex; justify-content: space-between; margin-bottom: 15px; color: #d8c9ae; }.section-heading small { color: #667582; font-family: system-ui, sans-serif; font-size: 11px; }.log-card p { display: flex; gap: 15px; margin: 10px 0; color: #9da9b0; font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.7; }.log-card p span { color: #8d6e45; }.empty-log { color: #64727c !important; }
 
+.route-card { margin-bottom: 18px; padding: clamp(22px, 4vw, 36px); border: 1px solid rgba(216, 173, 105, .24); background: linear-gradient(145deg, rgba(31, 47, 59, .94), rgba(18, 28, 39, .96)); }
+.route-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.route-heading h2 { margin: 12px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 34px); }
+.route-progress { color: #d8ad69; font-family: system-ui, sans-serif; font-size: 12px; white-space: nowrap; }
+.route-description { margin: 16px 0 25px; color: #99a8b1; font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.8; }
+.route-map { padding: 8px 0; }
+.route-floor-group { position: relative; }
+.floor-label { margin: 10px 0 7px; color: #806f59; font-family: system-ui, sans-serif; font-size: 10px; letter-spacing: .12em; text-align: center; }
+.route-node-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.route-node { min-height: 78px; padding: 9px 5px; color: #b6c1c7; border: 1px solid #344654; background: #162431; transition: .2s ease; }
+.route-node:hover:not(:disabled) { color: #f0dfbd; border-color: #d8ad69; background: #253643; transform: translateY(-2px); }
+.route-node:disabled { cursor: not-allowed; }
+.route-node-icon, .route-node strong, .route-node small { display: block; }
+.route-node-icon { margin-bottom: 3px; color: #8498a6; font-size: 18px; }
+.route-node strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.route-node small { margin-top: 5px; color: #788892; font-family: system-ui, sans-serif; font-size: 10px; }
+.route-node.available { color: #f1dfbd; border-color: #c69b5a; background: linear-gradient(145deg, #37404a, #1e2d38); box-shadow: 0 0 18px rgba(216, 173, 105, .11); }
+.route-node.available .route-node-icon { color: #d8ad69; }
+.route-node.cleared { color: #9fb4a2; border-color: #526c59; background: #192a2b; }
+.route-node.cleared .route-node-icon { color: #9bbf93; }
+.route-node.locked { opacity: .48; }
+.route-node.boss { border-color: #76504d; }
+.route-node.boss .route-node-icon { color: #df8b7a; }
+.route-connections { display: block; width: 100%; height: 42px; overflow: visible; }
+.route-connections line { stroke: #566675; stroke-dasharray: 3 4; stroke-width: 1.3; vector-effect: non-scaling-stroke; }
+.route-legend { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; color: #81909d; font-family: system-ui, sans-serif; font-size: 11px; }
+.route-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot { display: inline-block; width: 8px; height: 8px; border: 1px solid #62727d; border-radius: 50%; }
+.legend-dot.available { border-color: #d8ad69; background: #d8ad69; }.legend-dot.cleared { border-color: #9bbf93; background: #9bbf93; }.legend-dot.boss { border-color: #df8b7a; background: #df8b7a; }
+.event-kicker-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.event-kicker-row .event-kicker { margin-bottom: 0; }
+.rarity-badge, .repeatable-badge { padding: 4px 7px; border: 1px solid #596977; color: #abb7be; font-family: system-ui, sans-serif; font-size: 10px; }
+.rarity-badge.稀有, .rarity-badge.传说 { color: #e0b36a; border-color: #80623c; }.rarity-badge.Boss, .rarity-badge.终局 { color: #df8b7a; border-color: #76504d; }.repeatable-badge { color: #9bbf93; border-color: #526c59; }
+.ending-card { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 18px; padding: 25px clamp(20px, 4vw, 36px); border: 1px solid #526c59; background: linear-gradient(135deg, rgba(38, 59, 47, .9), rgba(22, 35, 40, .96)); }
+.ending-card.fallen { border-color: #76504d; background: linear-gradient(135deg, rgba(57, 39, 42, .9), rgba(22, 29, 37, .96)); }
+.ending-seal { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 auto; color: #d8ad69; border: 1px solid currentColor; font-size: 22px; }
+.ending-card h2 { margin: 10px 0 10px; color: #f0dfbd; }.ending-card p:last-child { margin-bottom: 0; color: #b8c6bd; line-height: 1.8; }
+
 @media (max-width: 640px) {
   .origin-grid, .stats-grid { grid-template-columns: 1fr 1fr; }
   .origin-card:last-child { grid-column: span 2; }
@@ -85,4 +123,6 @@ h1, h2, p { margin-top: 0; }
   .game-shell { padding: 24px 15px 55px; }
   .restore-row { flex-direction: column; }
   .restore-button { width: 100%; }
+  .route-heading { flex-direction: column; gap: 8px; }.route-progress { align-self: flex-start; }
+  .route-node { min-height: 70px; }.route-node strong { font-size: 11px; }.route-legend { gap: 9px; }
 }
