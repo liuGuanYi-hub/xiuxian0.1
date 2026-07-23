@@ -1,0 +1,21 @@
+# Java / Maven
+backend/target/
+.m2-repository/
+*.class
+
+# React / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Local environment
+.env
+application-local.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log

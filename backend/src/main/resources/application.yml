@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: xiuxian-roguelike-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/xiuxian_game?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:xiuxian}
+    password: ${DB_PASSWORD:xiuxian_dev}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Shanghai
+
+logging:
+  level:
+    com.xiuxian.roguelike: INFO
+
