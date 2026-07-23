@@ -1,6 +1,7 @@
 package com.xiuxian.roguelike.api;
 
 import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
+import com.xiuxian.roguelike.api.GameDtos.CombatActionRequest;
 import com.xiuxian.roguelike.api.GameDtos.GameRunView;
 import com.xiuxian.roguelike.api.GameDtos.StartRunRequest;
 import com.xiuxian.roguelike.service.GameService;
@@ -38,6 +39,11 @@ public class GameController {
     @PostMapping("/{id}/choices")
     public GameRunView choose(@PathVariable String id, @Valid @RequestBody ChoiceRequest request) {
         return gameService.choose(id, request);
+    }
+
+    @PostMapping("/{id}/combat/actions")
+    public GameRunView combatAction(@PathVariable String id, @Valid @RequestBody CombatActionRequest request) {
+        return gameService.actCombat(id, request);
     }
 
     @PostMapping("/{id}/nodes/{nodeId}/enter")

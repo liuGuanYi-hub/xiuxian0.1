@@ -81,7 +81,9 @@ class GameControllerTest {
         JsonNode entered = enterFirstAvailable(runId, startedRun);
 
         assertFalse(entered.get("currentNodeId").asText().isBlank());
-        JsonNode chosen = objectMapper.readTree(choose(runId, 0, "history-test-1"));
+        JsonNode chosen = entered.get("combat").isObject()
+                ? finishCombat(runId, entered)
+                : objectMapper.readTree(choose(runId, 0, "history-test-1"));
         assertEquals(runId, chosen.get("id").asText());
         assertEquals(1, chosen.get("turn").asInt());
         assertTrue(chosen.get("logs").size() >= 2);
@@ -96,9 +98,19 @@ class GameControllerTest {
     void battleChoiceCreatesThreeRewardsAndClaimAddsCard() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
-        enterFirstAvailable(runId, startedRun);
+        JsonNode entered = enterFirstAvailable(runId, startedRun);
+        assertTrue(entered.get("combat").isObject());
+        assertEquals(1, entered.get("combat").get("turn").asInt());
+        assertTrue(entered.get("combat").get("actions").size() >= 5);
 
-        JsonNode afterBattle = objectMapper.readTree(choose(runId, 0, "reward-test-1"));
+        JsonNode restored = objectMapper.readTree(mockMvc.perform(get("/api/game/runs/{id}", runId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(entered.get("combat").get("id").asText(), restored.get("combat").get("id").asText());
+
+        JsonNode afterGuard = combatAction(runId, "GUARD");
+        assertEquals(2, afterGuard.get("combat").get("turn").asInt());
+        JsonNode afterBattle = finishCombat(runId, afterGuard);
         assertEquals(1, afterBattle.get("turn").asInt());
         assertEquals(3, afterBattle.get("rewardOffers").size());
         assertEquals(2, afterBattle.get("build").size());
@@ -112,13 +124,14 @@ class GameControllerTest {
 
     @Test
     void configSeedsSeventeenCardsAndStarterActivatesDanCultivatorSynergy() throws Exception {
-        assertEquals(17, skillConfigRepository.count() + itemConfigRepository.count() + talismanConfigRepository.count());
+        assertEquals(25, skillConfigRepository.count() + itemConfigRepository.count() + talismanConfigRepository.count());
 
         JsonNode started = objectMapper.readTree(startRun());
         assertEquals(2, started.get("buildStats").get("archetypeCounts").get("丹修").asInt());
         JsonNode danSynergy = findSynergy(started.get("buildStats").get("synergies"), "丹修");
         assertTrue(danSynergy.get("active").asBoolean());
         assertEquals(5, started.get("buildStats").get("battleSpiritBonus").asInt());
+        assertEquals(2, started.get("buildStats").get("combatSpiritGain").asInt());
         assertTrue(started.get("build").get(0).has("archetype"));
     }
 
@@ -212,7 +225,9 @@ class GameControllerTest {
         assertTrue(parent != null, "固定的休息节点应该有上一跳");
 
         JsonNode current = enterNode(runId, parent.get("id").asText());
-        current = objectMapper.readTree(choose(runId, 0, "upgrade-prep-1"));
+        current = current.get("combat").isObject()
+                ? finishCombat(runId, current)
+                : objectMapper.readTree(choose(runId, 0, "upgrade-prep-1"));
         if (current.get("rewardOffers").size() > 0) {
             current = claimFirstReward(runId, current);
         }
@@ -235,7 +250,8 @@ class GameControllerTest {
     void duplicateRequestIdDoesNotAdvanceTheRunTwice() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
-        enterFirstAvailable(runId, startedRun);
+        JsonNode eventNode = firstNodeByType(startedRun.get("map").get("nodes"), "EVENT");
+        enterNode(runId, eventNode.get("id").asText());
         String body = "{\"choiceIndex\":0,\"requestId\":\"duplicate-test-1\"}";
 
         mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
@@ -256,7 +272,8 @@ class GameControllerTest {
     void invalidChoiceReturnsBadRequest() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
-        enterFirstAvailable(runId, startedRun);
+        JsonNode eventNode = firstNodeByType(startedRun.get("map").get("nodes"), "EVENT");
+        enterNode(runId, eventNode.get("id").asText());
 
         mockMvc.perform(post("/api/game/runs/{id}/choices", runId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -285,6 +302,10 @@ class GameControllerTest {
             }
             if (!current.get("removal").isNull()) {
                 current = skipSpecialRemoval(runId);
+                continue;
+            }
+            if (!current.get("combat").isNull()) {
+                current = finishCombat(runId, current);
                 continue;
             }
             if (!current.get("currentNodeId").asText().isBlank()) {
@@ -326,7 +347,11 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.currentNodeId").value(node.get("id").asText()))
                 .andExpect(jsonPath("$.event.choices.length()").value(3))
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString());
+        JsonNode entered = objectMapper.readTree(result.getResponse().getContentAsString());
+        if (entered.get("combat").isObject()) {
+            assertTrue(entered.get("combat").get("actions").size() >= 4);
+        }
+        return entered;
     }
 
     private JsonNode claimFirstReward(String runId, JsonNode current) throws Exception {
@@ -379,6 +404,29 @@ class GameControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
+    private JsonNode finishCombat(String runId, JsonNode current) throws Exception {
+        for (int turn = 0; turn < 60 && current.get("combat").isObject(); turn++) {
+            String action = current.get("combat").get("enemyBlock").asInt() > 0
+                    && current.get("spirit").asInt() >= 3 ? "STRIKE"
+                    : "ATTACK".equals(current.get("combat").get("intent").asText()) ? "GUARD"
+                    : current.get("spirit").asInt() >= 8 ? "TECHNIQUE"
+                    : current.get("spirit").asInt() >= 3 ? "STRIKE" : "MEDITATE";
+            current = combatAction(runId, action);
+            if (!"RUNNING".equals(current.get("status").asText())) break;
+        }
+        assertFalse(current.get("combat").isObject(), "测试战斗应该在 60 回合内结束");
+        return current;
+    }
+
+    private JsonNode combatAction(String runId, String action) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/combat/actions", runId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"action\":\"" + action + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
     private JsonNode buyShopOffer(String runId, String offerId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/game/runs/{id}/shops/{offerId}/buy", runId, offerId))
                 .andExpect(status().isOk())
@@ -419,6 +467,10 @@ class GameControllerTest {
             }
             if (!current.get("removal").isNull()) {
                 current = skipSpecialRemoval(runId);
+                continue;
+            }
+            if (!current.get("combat").isNull()) {
+                current = finishCombat(runId, current);
                 continue;
             }
             if (!current.get("currentNodeId").asText().isBlank()) {

@@ -44,6 +44,18 @@ public abstract class BuildConfigEntity {
     @Column(name = "battle_spirit_bonus", nullable = false)
     private int battleSpiritBonus;
 
+    @Column(name = "combat_damage_bonus", nullable = false)
+    private int combatDamageBonus;
+
+    @Column(name = "combat_block_bonus", nullable = false)
+    private int combatBlockBonus;
+
+    @Column(name = "combat_spirit_gain", nullable = false)
+    private int combatSpiritGain;
+
+    @Column(name = "combat_poison_bonus", nullable = false)
+    private int combatPoisonBonus;
+
     @Column(name = "battle_weight", nullable = false)
     private int battleWeight;
 
@@ -62,8 +74,10 @@ public abstract class BuildConfigEntity {
     protected BuildConfigEntity(String cardId, String name, String rarity, String description,
                                 String effectText, String archetype, int healthOnClaim,
                                 int spiritOnClaim, int lifespanOnClaim, int karmaOnClaim,
-                                int battleHealthBonus, int battleSpiritBonus, int battleWeight,
-                                int eliteWeight, int treasureWeight, boolean enabled) {
+                                int battleHealthBonus, int battleSpiritBonus,
+                                int combatDamageBonus, int combatBlockBonus, int combatSpiritGain,
+                                int combatPoisonBonus, int battleWeight, int eliteWeight,
+                                int treasureWeight, boolean enabled) {
         this.cardId = cardId;
         this.name = name;
         this.rarity = rarity;
@@ -76,6 +90,10 @@ public abstract class BuildConfigEntity {
         this.karmaOnClaim = karmaOnClaim;
         this.battleHealthBonus = battleHealthBonus;
         this.battleSpiritBonus = battleSpiritBonus;
+        this.combatDamageBonus = combatDamageBonus;
+        this.combatBlockBonus = combatBlockBonus;
+        this.combatSpiritGain = combatSpiritGain;
+        this.combatPoisonBonus = combatPoisonBonus;
         this.battleWeight = battleWeight;
         this.eliteWeight = eliteWeight;
         this.treasureWeight = treasureWeight;
@@ -94,6 +112,10 @@ public abstract class BuildConfigEntity {
     public int getKarmaOnClaim() { return karmaOnClaim; }
     public int getBattleHealthBonus() { return battleHealthBonus; }
     public int getBattleSpiritBonus() { return battleSpiritBonus; }
+    public int getCombatDamageBonus() { return combatDamageBonus; }
+    public int getCombatBlockBonus() { return combatBlockBonus; }
+    public int getCombatSpiritGain() { return combatSpiritGain; }
+    public int getCombatPoisonBonus() { return combatPoisonBonus; }
     public int getBattleWeight() { return battleWeight; }
     public int getEliteWeight() { return eliteWeight; }
     public int getTreasureWeight() { return treasureWeight; }

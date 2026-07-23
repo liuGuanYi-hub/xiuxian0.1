@@ -89,6 +89,38 @@ export type BuildStats = {
   battleSpiritBonus: number
   battleLifespanBonus: number
   battleKarmaBonus: number
+  combatDamageBonus: number
+  combatBlockBonus: number
+  combatSpiritGain: number
+  combatPoisonBonus: number
+}
+
+export type CombatAction = {
+  id: string
+  label: string
+  spiritCost: number
+  hint: string
+}
+
+export type CombatView = {
+  id: string
+  enemyId: string
+  enemyName: string
+  enemyType: string
+  enemyDescription: string
+  health: number
+  maxHealth: number
+  enemyBlock: number
+  enemyPoison: number
+  playerBlock: number
+  playerPoison: number
+  turn: number
+  intent: string
+  intentValue: number
+  intentText: string
+  status: string
+  actions: CombatAction[]
+  recentLog: string[]
 }
 
 export type GameRun = {
@@ -114,5 +146,6 @@ export type GameRun = {
   rewardOffers: RewardOffer[]
   shop: ShopState | null
   removal: RemovalState | null
+  combat: CombatView | null
   logs: string[]
 }

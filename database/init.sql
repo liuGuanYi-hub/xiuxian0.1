@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS skill_config (
   karma_on_claim INT NOT NULL DEFAULT 0,
   battle_health_bonus INT NOT NULL DEFAULT 0,
   battle_spirit_bonus INT NOT NULL DEFAULT 0,
+  combat_damage_bonus INT NOT NULL DEFAULT 0,
+  combat_block_bonus INT NOT NULL DEFAULT 0,
+  combat_spirit_gain INT NOT NULL DEFAULT 0,
+  combat_poison_bonus INT NOT NULL DEFAULT 0,
   battle_weight INT NOT NULL DEFAULT 0,
   elite_weight INT NOT NULL DEFAULT 0,
   treasure_weight INT NOT NULL DEFAULT 0,
@@ -61,4 +65,29 @@ CREATE TABLE IF NOT EXISTS run_shop_offer (
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
   created_at DATETIME(6) NOT NULL,
   KEY idx_shop_offer_shop_status (shop_id, status, slot_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS run_combat (
+  id VARCHAR(36) PRIMARY KEY,
+  run_id VARCHAR(36) NOT NULL,
+  node_id VARCHAR(36) NOT NULL,
+  enemy_id VARCHAR(40) NOT NULL,
+  enemy_name VARCHAR(80) NOT NULL,
+  enemy_type VARCHAR(20) NOT NULL,
+  enemy_description VARCHAR(240) NOT NULL,
+  max_health INT NOT NULL,
+  health INT NOT NULL,
+  enemy_block INT NOT NULL DEFAULT 0,
+  enemy_power INT NOT NULL DEFAULT 0,
+  enemy_poison INT NOT NULL DEFAULT 0,
+  player_block INT NOT NULL DEFAULT 0,
+  player_poison INT NOT NULL DEFAULT 0,
+  intent VARCHAR(20) NOT NULL,
+  intent_value INT NOT NULL,
+  turn INT NOT NULL DEFAULT 1,
+  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  combat_log TEXT NOT NULL,
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  KEY idx_run_combat_run_status (run_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -103,17 +103,23 @@ public class BuildConfigService {
             skillRepository.save(new SkillConfigEntity(seed.cardId(), seed.name(), seed.rarity(), seed.description(),
                     seed.effectText(), seed.archetype(), seed.healthOnClaim(), seed.spiritOnClaim(),
                     seed.lifespanOnClaim(), seed.karmaOnClaim(), seed.battleHealthBonus(),
-                    seed.battleSpiritBonus(), seed.battleWeight(), seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
+                    seed.battleSpiritBonus(), seed.combatDamageBonus(), seed.combatBlockBonus(),
+                    seed.combatSpiritGain(), seed.combatPoisonBonus(), seed.battleWeight(),
+                    seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
         } else if ("法宝".equals(seed.category()) && !itemRepository.existsById(seed.cardId())) {
             itemRepository.save(new ItemConfigEntity(seed.cardId(), seed.name(), seed.rarity(), seed.description(),
                     seed.effectText(), seed.archetype(), seed.healthOnClaim(), seed.spiritOnClaim(),
                     seed.lifespanOnClaim(), seed.karmaOnClaim(), seed.battleHealthBonus(),
-                    seed.battleSpiritBonus(), seed.battleWeight(), seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
+                    seed.battleSpiritBonus(), seed.combatDamageBonus(), seed.combatBlockBonus(),
+                    seed.combatSpiritGain(), seed.combatPoisonBonus(), seed.battleWeight(),
+                    seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
         } else if ("符箓".equals(seed.category()) && !talismanRepository.existsById(seed.cardId())) {
             talismanRepository.save(new TalismanConfigEntity(seed.cardId(), seed.name(), seed.rarity(), seed.description(),
                     seed.effectText(), seed.archetype(), seed.healthOnClaim(), seed.spiritOnClaim(),
                     seed.lifespanOnClaim(), seed.karmaOnClaim(), seed.battleHealthBonus(),
-                    seed.battleSpiritBonus(), seed.battleWeight(), seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
+                    seed.battleSpiritBonus(), seed.combatDamageBonus(), seed.combatBlockBonus(),
+                    seed.combatSpiritGain(), seed.combatPoisonBonus(), seed.battleWeight(),
+                    seed.eliteWeight(), seed.treasureWeight(), seed.enabled()));
         }
     }
 
@@ -121,7 +127,8 @@ public class BuildConfigService {
         return new CardDefinition(row.getCardId(), category, row.getName(), row.getRarity(), row.getDescription(),
                 row.getEffectText(), row.getArchetype(), row.getHealthOnClaim(), row.getSpiritOnClaim(),
                 row.getLifespanOnClaim(), row.getKarmaOnClaim(), row.getBattleHealthBonus(),
-                row.getBattleSpiritBonus(), row.getBattleWeight(), row.getEliteWeight(),
+                row.getBattleSpiritBonus(), row.getCombatDamageBonus(), row.getCombatBlockBonus(),
+                row.getCombatSpiritGain(), row.getCombatPoisonBonus(), row.getBattleWeight(), row.getEliteWeight(),
                 row.getTreasureWeight(), row.isEnabled());
     }
 
@@ -131,11 +138,15 @@ public class BuildConfigService {
                                  String description, String effectText, String archetype,
                                  int healthOnClaim, int spiritOnClaim, int lifespanOnClaim,
                                  int karmaOnClaim, int battleHealthBonus, int battleSpiritBonus,
-                                 int battleWeight, int eliteWeight, int treasureWeight, boolean enabled) { }
+                                 int combatDamageBonus, int combatBlockBonus, int combatSpiritGain,
+                                 int combatPoisonBonus, int battleWeight, int eliteWeight,
+                                 int treasureWeight, boolean enabled) { }
 
     private record CardSeed(String cardId, String category, String name, String rarity,
                             String description, String effectText, String archetype,
                             int healthOnClaim, int spiritOnClaim, int lifespanOnClaim,
                             int karmaOnClaim, int battleHealthBonus, int battleSpiritBonus,
-                            int battleWeight, int eliteWeight, int treasureWeight, boolean enabled) { }
+                            int combatDamageBonus, int combatBlockBonus, int combatSpiritGain,
+                            int combatPoisonBonus, int battleWeight, int eliteWeight,
+                            int treasureWeight, boolean enabled) { }
 }

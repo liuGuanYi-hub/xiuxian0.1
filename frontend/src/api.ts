@@ -28,6 +28,13 @@ export function chooseEvent(runId: string, choiceIndex: number) {
   })
 }
 
+export function combatAction(runId: string, action: string) {
+  return request<GameRun>(`/game/runs/${runId}/combat/actions`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  })
+}
+
 export function enterNode(runId: string, nodeId: string) {
   return request<GameRun>(`/game/runs/${runId}/nodes/${nodeId}/enter`, {
     method: 'POST',

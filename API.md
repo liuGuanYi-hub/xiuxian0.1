@@ -16,6 +16,14 @@
 | POST | `/game/runs/{id}/nodes/{nodeId}/enter` | 进入相邻的 `AVAILABLE` 节点 |
 | POST | `/game/runs/{id}/choices` | 提交 `{"choiceIndex":0,"requestId":"uuid"}` |
 
+进入 `BATTLE`、`ELITE` 或 `BOSS` 节点后，服务端会创建可恢复的 `run_combat` 战斗快照；此时不能提交事件选择，必须先完成战斗。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/game/runs/{id}/combat/actions` | 提交 `{"action":"STRIKE"}`，行动包括 `STRIKE`、`GUARD`、`MEDITATE`、`TECHNIQUE`、`PURIFY` |
+
+战斗行动由服务端扣除灵力、结算伤害、护盾、中毒和敌人意图。每次响应都返回最新的 `combat`；战斗胜利后 `combat` 置空并进入奖励或渡劫结局，刷新页面可从 `GET /game/runs/{id}` 恢复当前回合。
+
 ## 构筑奖励与强化
 
 | 方法 | 路径 | 说明 |
@@ -55,10 +63,11 @@
 - `archetypeCounts`：剑修、丹修、体修、鬼修数量
 - `synergies`：每个流派的数量、是否激活和效果说明
 - `battleHealthBonus`、`battleSpiritBonus`、`battleLifespanBonus`、`battleKarmaBonus`：服务端汇总的当前战斗加成
+- `combatDamageBonus`、`combatBlockBonus`、`combatSpiritGain`、`combatPoisonBonus`：回合战斗中的伤害、护盾、调息和战技中毒加成
 
 ## 配置与迁移
 
-- 初始 17 张卡牌位于 `backend/src/main/resources/card-config.json`。
+- 初始 25 张卡牌位于 `backend/src/main/resources/card-config.json`，其中新增 8 张战斗专属卡牌。
 - 应用启动时只补充配置表缺失记录，不覆盖已有配置。
-- 新环境可执行 `database/init.sql`；已有环境可执行 `database/migrations/20260723_v04_build_extension.sql`。
+- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260723_v04_build_extension.sql` 和 `database/migrations/20260723_v05_combat_depth.sql`。
 - `run_build_item` 保存领取/购买时的卡牌快照，后续修改配置不会改变历史存档。

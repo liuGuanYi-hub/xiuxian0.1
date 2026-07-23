@@ -2,6 +2,8 @@ package com.xiuxian.roguelike.service;
 
 import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceView;
+import com.xiuxian.roguelike.api.GameDtos.CombatActionRequest;
+import com.xiuxian.roguelike.api.GameDtos.CombatView;
 import com.xiuxian.roguelike.api.GameDtos.BuildCardView;
 import com.xiuxian.roguelike.api.GameDtos.BuildStatsView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
@@ -17,6 +19,7 @@ import com.xiuxian.roguelike.domain.BuildItemEntity;
 import com.xiuxian.roguelike.domain.GameRunEntity;
 import com.xiuxian.roguelike.domain.RewardOfferEntity;
 import com.xiuxian.roguelike.domain.RunEventEntity;
+import com.xiuxian.roguelike.domain.RunCombatEntity;
 import com.xiuxian.roguelike.domain.RunMapNodeEntity;
 import com.xiuxian.roguelike.domain.RunShopEntity;
 import com.xiuxian.roguelike.domain.RunShopOfferEntity;
@@ -47,11 +50,13 @@ public class GameService {
     private final RunMapService runMapService;
     private final BuildService buildService;
     private final BuildConfigService configService;
+    private final CombatService combatService;
 
     public GameService(GameRunRepository gameRunRepository, RunEventRepository runEventRepository,
                        BuildItemRepository buildItemRepository, RewardOfferRepository rewardOfferRepository,
                        RunShopRepository runShopRepository, RunShopOfferRepository runShopOfferRepository,
-                       RunMapService runMapService, BuildService buildService, BuildConfigService configService) {
+                       RunMapService runMapService, BuildService buildService, BuildConfigService configService,
+                       CombatService combatService) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
         this.buildItemRepository = buildItemRepository;
@@ -61,6 +66,7 @@ public class GameService {
         this.runMapService = runMapService;
         this.buildService = buildService;
         this.configService = configService;
+        this.combatService = combatService;
     }
 
     @Transactional
@@ -101,7 +107,60 @@ public class GameService {
         runMapService.enter(node);
         run.enterNode(node.getId(), node.getFloor(), node.getContentId());
         gameRunRepository.save(run);
+        if ("BATTLE".equals(node.getType()) || "ELITE".equals(node.getType()) || "BOSS".equals(node.getType())) {
+            combatService.start(run, node);
+            return toView(run, List.of("战斗已经开始：先观察敌人的意图，再决定如何出手。"));
+        }
         return toView(run, List.of("你进入了第 " + (node.getFloor() + 1) + " 层的" + node.getLabel() + "。"));
+    }
+
+    @Transactional
+    public synchronized GameRunView actCombat(String id, CombatActionRequest request) {
+        GameRunEntity run = findRun(id);
+        ensureRunning(run);
+        RunCombatEntity combat = combatService.active(run.getId());
+        if (combat == null || !run.getCurrentNodeId().equals(combat.getNodeId())) {
+            throw new IllegalStateException("当前没有进行中的战斗。");
+        }
+
+        CombatService.CombatResult result = combatService.act(run, combat, request.action());
+        RunMapNodeEntity node = runMapService.findNode(run.getId(), combat.getNodeId());
+        List<String> allNodesLogs = new ArrayList<>(result.logs());
+        if (result.won()) {
+            boolean boss = "BOSS".equals(node.getType());
+            int nextTurn = run.getTurn() + 1;
+            String nextStatus = boss ? "ASCENDED" : "RUNNING";
+            String endingId = boss ? resolveEnding(run, 0, 0, 0, 0) : null;
+            run.applyChoice(0, 0, 0, 0, "awaiting_node", realmForTurn(nextTurn), nextStatus, endingId);
+            run.clearNode();
+            combat.appendLog("你击败了" + combat.getEnemyName() + "。");
+            runEventRepository.save(new RunEventEntity(run.getId(), run.getTurn(),
+                    "combat_" + combat.getEnemyId(), "战斗：" + combat.getEnemyName(), 0,
+                    "击败" + combat.getEnemyName(), 0, 0, 0, 0, null,
+                    "回合战斗胜利。"));
+            if (!boss) {
+                run.setPendingRewardNode(node.getId());
+                node.markRewardPending();
+                EventCatalog.EventDefinition event = EventCatalog.get(node.getContentId());
+                rewardOfferRepository.saveAll(buildService.createOffers(run, node, EventCatalog.meta(event.id()),
+                        countClearedElites(runMapService.getNodes(run.getId()))));
+                allNodesLogs.add("战斗胜利：请选择一张新的构筑卡牌。" );
+            } else {
+                node.markCleared();
+                allNodesLogs.add("渡劫战斗胜利：天关已经为你打开。" );
+            }
+        } else if (result.lost()) {
+            run.applyChoice(0, 0, 0, 0, "awaiting_node", realmForTurn(run.getTurn() + 1), "DEAD", "fallen_path");
+            run.clearNode();
+            node.markCleared();
+            allNodesLogs.add("战斗失败：你的肉身没有撑过敌人的最后一击。" );
+        }
+
+        gameRunRepository.save(run);
+        if (result.won() || result.lost()) {
+            runMapService.saveNode(node);
+        }
+        return toView(run, allNodesLogs);
     }
 
     @Transactional
@@ -120,6 +179,9 @@ public class GameService {
         }
 
         ensureRunning(run);
+        if (combatService.active(run.getId()) != null) {
+            throw new IllegalStateException("请先完成当前战斗。");
+        }
         if (run.getCurrentNodeId().isBlank()) {
             throw new IllegalStateException("请先从路线图中选择一个节点。");
         }
@@ -575,13 +637,14 @@ public class GameService {
         RemovalView removal = run.getPendingRemovalNodeId() == null
                 ? null
                 : buildService.toRemovalView("SPECIAL_EVENT", build);
+        CombatView combat = combatService.toView(combatService.active(run.getId()));
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
                 run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(), run.getSpiritStones(),
                 run.getTurn(), run.getStatus(), run.getCurrentNodeId(), run.getCurrentFloor(),
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
-                map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, logs
+                map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, combat, logs
         );
     }
 

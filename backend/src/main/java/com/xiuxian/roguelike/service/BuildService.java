@@ -177,8 +177,22 @@ public class BuildService {
                         definition.lifespanThreeBonus(), definition.karmaThreeBonus());
             }
         }
+        CombatModifier combatModifier = combatModifierWithoutSynergy(runId);
+        for (SynergyView synergy : synergies) {
+            if (!synergy.active()) continue;
+            combatModifier = combatModifier.plus(synergyCombatBonus(synergy.archetype()));
+        }
         return new BuildStatsView(build.size(), categoryCounts, archetypeCounts, synergies,
-                modifier.healthDelta(), modifier.spiritDelta(), modifier.lifespanDelta(), modifier.karmaDelta());
+                modifier.healthDelta(), modifier.spiritDelta(), modifier.lifespanDelta(), modifier.karmaDelta(),
+                combatModifier.damage(), combatModifier.block(), combatModifier.spiritGain(), combatModifier.poison());
+    }
+
+    public CombatModifier combatModifier(String runId) {
+        CombatModifier modifier = combatModifierWithoutSynergy(runId);
+        for (SynergyView synergy : buildStats(runId).synergies()) {
+            if (synergy.active()) modifier = modifier.plus(synergyCombatBonus(synergy.archetype()));
+        }
+        return modifier;
     }
 
     public BuildItemEntity toBuildItem(String runId, RewardOfferEntity offer) {
@@ -238,6 +252,32 @@ public class BuildService {
             }
         }
         return new BuildModifier(health, spirit, 0, 0);
+    }
+
+    private CombatModifier combatModifierWithoutSynergy(String runId) {
+        int damage = 0;
+        int block = 0;
+        int spiritGain = 0;
+        int poison = 0;
+        for (BuildItemEntity item : getBuild(runId)) {
+            BuildConfigService.CardDefinition card = configService.get(item.getCardId());
+            int multiplier = item.getUpgradeLevel() + 1;
+            damage += card.combatDamageBonus() * multiplier;
+            block += card.combatBlockBonus() * multiplier;
+            spiritGain += card.combatSpiritGain() * multiplier;
+            poison += card.combatPoisonBonus() * multiplier;
+        }
+        return new CombatModifier(damage, block, spiritGain, poison);
+    }
+
+    private CombatModifier synergyCombatBonus(String archetype) {
+        return switch (archetype) {
+            case "剑修" -> new CombatModifier(2, 0, 0, 0);
+            case "丹修" -> new CombatModifier(0, 0, 2, 0);
+            case "体修" -> new CombatModifier(0, 3, 0, 0);
+            case "鬼修" -> new CombatModifier(0, 0, 0, 1);
+            default -> new CombatModifier(0, 0, 0, 0);
+        };
     }
 
     private List<RewardOfferEntity> createRewardOffers(GameRunEntity run, RunMapNodeEntity node,
@@ -321,6 +361,13 @@ public class BuildService {
         public BuildModifier plus(int health, int spirit, int lifespan, int karma) {
             return new BuildModifier(healthDelta + health, spiritDelta + spirit,
                     lifespanDelta + lifespan, karmaDelta + karma);
+        }
+    }
+
+    public record CombatModifier(int damage, int block, int spiritGain, int poison) {
+        public CombatModifier plus(CombatModifier other) {
+            return new CombatModifier(damage + other.damage, block + other.block,
+                    spiritGain + other.spiritGain, poison + other.poison);
         }
     }
 

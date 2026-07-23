@@ -25,6 +25,11 @@ public final class GameDtos {
     ) {
     }
 
+    public record CombatActionRequest(
+            @NotBlank(message = "战斗行动不能为空") String action
+    ) {
+    }
+
     public record ChoiceView(int index, String label, String hint) {
     }
 
@@ -71,7 +76,19 @@ public final class GameDtos {
     public record BuildStatsView(int activeCards, Map<String, Integer> categoryCounts,
                                  Map<String, Integer> archetypeCounts, List<SynergyView> synergies,
                                  int battleHealthBonus, int battleSpiritBonus,
-                                 int battleLifespanBonus, int battleKarmaBonus) {
+                                 int battleLifespanBonus, int battleKarmaBonus,
+                                 int combatDamageBonus, int combatBlockBonus,
+                                 int combatSpiritGain, int combatPoisonBonus) {
+    }
+
+    public record CombatActionView(String id, String label, int spiritCost, String hint) {
+    }
+
+    public record CombatView(String id, String enemyId, String enemyName, String enemyType,
+                             String enemyDescription, int health, int maxHealth, int enemyBlock,
+                             int enemyPoison, int playerBlock, int playerPoison, int turn, String intent,
+                             int intentValue, String intentText, String status,
+                             List<CombatActionView> actions, List<String> recentLog) {
     }
 
     public record GameRunView(
@@ -97,6 +114,7 @@ public final class GameDtos {
             List<RewardOfferView> rewardOffers,
             ShopView shop,
             RemovalView removal,
+            CombatView combat,
             List<String> logs
     ) {
     }

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowRight, Coins, Compass, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, ShoppingBag, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
-import { buyShopOffer, chooseEvent, claimReward, enterNode, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
-import type { BuildStats, GameRun, MapNode, RemovalState, RewardOffer, ShopState } from './types'
+import { ArrowRight, Coins, Compass, Crosshair, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, Shield, ShoppingBag, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
+import { buyShopOffer, chooseEvent, claimReward, combatAction, enterNode, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
+import type { BuildStats, CombatView, GameRun, MapNode, RemovalState, RewardOffer, ShopState } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -64,6 +64,19 @@ function App() {
       setRun(await chooseEvent(run.id, choiceIndex))
     } catch (err) {
       setError(err instanceof Error ? err.message : '选择未能送达。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function actCombat(action: string) {
+    if (!run || run.status !== 'RUNNING' || !run.combat) return
+    setLoading(true)
+    setError('')
+    try {
+      setRun(await combatAction(run.id, action))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '战斗行动未能送达。')
     } finally {
       setLoading(false)
     }
@@ -322,11 +335,15 @@ function App() {
         />
       )}
 
-      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !run.shop && !run.removal && !activeNode && (
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !run.shop && !run.removal && run.combat && (
+        <CombatPanel combat={run.combat} spirit={run.spirit} loading={loading} onAction={(action) => void actCombat(action)} />
+      )}
+
+      {run.rewardOffers.length === 0 && run.upgradeOptions.length === 0 && !run.shop && !run.removal && !run.combat && !activeNode && (
         <RouteMapPanel run={run} loading={loading} onEnter={(nodeId) => void enter(nodeId)} />
       )}
 
-      {activeNode && (
+      {activeNode && !run.combat && (
         <section className="event-card">
           <div className="event-mark">{nodeIcons[activeNode.type] ?? '缘'}</div>
           <div className="event-content">
@@ -475,6 +492,59 @@ function BuildStatsPanel({ stats }: { stats: BuildStats }) {
         <span><Flame size={14} />战斗灵力 +{stats.battleSpiritBonus}</span>
         <span><Hourglass size={14} />战斗寿元 {formatSigned(stats.battleLifespanBonus)}</span>
         <span><Sparkles size={14} />战斗因果 {formatSigned(stats.battleKarmaBonus)}</span>
+        <span><Crosshair size={14} />伤害 +{stats.combatDamageBonus}</span>
+        <span><Shield size={14} />护盾 +{stats.combatBlockBonus}</span>
+        <span><Flame size={14} />调息 +{stats.combatSpiritGain}</span>
+        <span><Sparkles size={14} />战技中毒 +{stats.combatPoisonBonus}</span>
+      </div>
+    </section>
+  )
+}
+
+function CombatPanel({ combat, spirit, loading, onAction }: {
+  combat: CombatView
+  spirit: number
+  loading: boolean
+  onAction: (action: string) => void
+}) {
+  const enemyHealthPercent = Math.max(0, Math.round((combat.health / combat.maxHealth) * 100))
+  return (
+    <section className="combat-panel">
+      <div className="combat-heading">
+        <div>
+          <p className="event-kicker"><Crosshair size={14} />回合战斗 · 第 {combat.turn} 回合</p>
+          <h2>{combat.enemyName}<span> · {combat.enemyType}</span></h2>
+          <p className="combat-description">{combat.enemyDescription}</p>
+        </div>
+        <div className="combat-intent"><small>敌人意图</small><strong>{combat.intentText}</strong></div>
+      </div>
+      <div className="combat-health-row">
+        <div className="combat-health-label"><span>敌方气血</span><strong>{combat.health} / {combat.maxHealth}</strong></div>
+        <div className="combat-health-track"><i style={{ width: `${enemyHealthPercent}%` }} /></div>
+      </div>
+      <div className="combat-status-row">
+        <span><Shield size={14} />敌方护盾 {combat.enemyBlock}</span>
+        <span><Sparkles size={14} />敌方中毒 {combat.enemyPoison}</span>
+        <span><Shield size={14} />我方护盾 {combat.playerBlock}</span>
+        <span><Sparkles size={14} />中毒 {combat.playerPoison}</span>
+        <span><Flame size={14} />灵力 {spirit}</span>
+      </div>
+      <div className="combat-actions">
+        {combat.actions.map((action) => (
+          <button
+            className={`combat-action ${action.id.toLowerCase()}`}
+            disabled={loading || spirit < action.spiritCost}
+            key={action.id}
+            onClick={() => onAction(action.id)}
+            type="button"
+          >
+            <strong>{action.label}</strong>
+            <small>{action.spiritCost > 0 ? `消耗 ${action.spiritCost} 灵力 · ` : ''}{action.hint}</small>
+          </button>
+        ))}
+      </div>
+      <div className="combat-log">
+        {combat.recentLog.map((log, index) => <p key={`${log}-${index}`}>{log}</p>)}
       </div>
     </section>
   )
