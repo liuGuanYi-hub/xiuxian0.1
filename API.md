@@ -89,15 +89,60 @@
 
 ## 配置中心接口
 
-当前配置管理接口暂未接入账号鉴权，适用于本地开发和内网配置工具；生产环境接入 JWT 后再开放给管理员。
+所有 `/api/admin/**` 配置中心接口都需要管理员令牌。请求可以使用 `X-Admin-Token`，也可以使用
+`Authorization: Bearer <token>`。本地开发默认令牌为 `dev-admin-token`，生产环境必须通过
+`ADMIN_CONFIG_TOKEN` 环境变量覆盖，尚未接入账号体系或 JWT。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/admin/config/events?includeDisabled=false` | 查询事件和结局配置，默认只返回启用项 |
 | POST | `/admin/config/events/import` | 导入配置并执行全量引用校验，失败时不写入配置 |
+| GET | `/admin/config/cards?includeDisabled=false` | 查询功法、法宝、符箓统一配置，默认只返回启用项 |
+| POST | `/admin/config/cards/import` | 统一导入三类卡牌配置，导入后重建卡牌缓存并执行校验 |
 | POST | `/admin/config/validate?operator=admin` | 校验当前启用配置并记录 `VALIDATE` 日志 |
 | POST | `/admin/config/reload?operator=admin` | 从数据库重建事件缓存并记录 `RELOAD` 日志 |
 | GET | `/admin/config/logs` | 查询最近 50 条初始化、导入、校验和重载日志 |
+
+卡牌统一导入请求示例：
+
+```json
+{
+  "operator": "admin",
+  "configs": [
+    {
+      "cardId": "new_skill",
+      "category": "功法",
+      "name": "新功法",
+      "rarity": "稀有",
+      "description": "卡牌描述",
+      "effectText": "领取后获得 1 点灵力",
+      "archetype": "剑修",
+      "healthOnClaim": 0,
+      "spiritOnClaim": 1,
+      "lifespanOnClaim": 0,
+      "karmaOnClaim": 0,
+      "battleHealthBonus": 0,
+      "battleSpiritBonus": 0,
+      "combatDamageBonus": 1,
+      "combatBlockBonus": 0,
+      "combatSpiritGain": 0,
+      "combatPoisonBonus": 0,
+      "battleWeight": 1,
+      "eliteWeight": 2,
+      "treasureWeight": 2,
+      "version": 1,
+      "enabled": true
+    }
+  ]
+}
+```
+
+示例请求头：
+
+```http
+X-Admin-Token: dev-admin-token
+Content-Type: application/json
+```
 
 导入请求示例：
 

@@ -9,3 +9,6 @@ spring:
       ddl-auto: create-drop
     open-in-view: false
 
+app:
+  admin:
+    token: dev-admin-token

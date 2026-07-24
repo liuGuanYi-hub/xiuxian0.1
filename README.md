@@ -32,6 +32,8 @@
 - 25 张卡牌通过 `card-config.json` 幂等初始化到 `skill_config`、`item_config`、`talisman_config`，新增 8 张战斗专属卡牌
 - V0.6 事件配置中心：28 个事件、6 个结局和 78 个选项从 `event-config.json` 幂等初始化到 `event_config`
 - 事件配置支持版本号、启用状态、JSON 导入、引用校验、缓存重载和操作日志，不改 Java 核心即可调整内容
+- V0.6 卡牌统一导入接口：功法、法宝、符箓使用同一套 JSON 字段导入，并自动重建缓存、校验和记录操作日志
+- 配置中心管理员鉴权：`/api/admin/**` 支持 `X-Admin-Token` 或 `Authorization: Bearer`，生产环境使用 `ADMIN_CONFIG_TOKEN`
 - V0.6 终局自动生成不可变结算快照，按进度、属性、精英和构筑计算积分，并提供天道榜
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
@@ -42,6 +44,16 @@
 构筑统计、流派协同与每局随机路线图：
 
 ![V0.4 构筑统计与随机路线图](./output/playwright/v04-build-stats-full.png)
+
+## V0.6 运行截图
+
+启动页、随机路线图和回合战斗面板：
+
+![V0.6 启动页](./output/playwright/v06-home.png)
+
+![V0.6 随机路线图与构筑统计](./output/playwright/v06-route-map.png)
+
+![V0.6 回合战斗与构筑统计](./output/playwright/v06-node-panel.png)
 
 ## 启动数据库
 
@@ -95,12 +107,16 @@ npm run dev
 | POST | `/api/game/runs/{id}/shops/leave` | 关闭坊市并解锁下一层 |
 | GET | `/api/admin/config/events` | 查询事件/结局配置和校验状态 |
 | POST | `/api/admin/config/events/import` | 导入版本化事件 JSON 配置 |
+| GET | `/api/admin/config/cards` | 查询功法、法宝、符箓统一配置 |
+| POST | `/api/admin/config/cards/import` | 统一导入卡牌配置并执行校验 |
 | POST | `/api/admin/config/validate` | 校验当前启用配置并写入操作日志 |
 | POST | `/api/admin/config/reload` | 重载事件配置缓存并校验 |
 | GET | `/api/admin/config/logs` | 查看最近 50 条配置操作日志 |
 | GET | `/api/leaderboard?limit=10` | 查询已完成旅程的积分排行榜 |
 
 完整请求/响应字段说明见：[API.md](./API.md)；V0.4 逐项验收见：[V0.4_ACCEPTANCE.md](./V0.4_ACCEPTANCE.md)。
+
+配置中心接口需要管理员令牌。本地开发默认使用 `dev-admin-token`；部署时请设置 `ADMIN_CONFIG_TOKEN`，不要使用默认值。
 
 ## 默认数据库配置
 

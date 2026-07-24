@@ -124,4 +124,36 @@ public abstract class BuildConfigEntity {
     public int getTreasureWeight() { return treasureWeight; }
     public boolean isEnabled() { return enabled; }
     public int getConfigVersion() { return configVersion; }
+
+    public void update(String name, String rarity, String description, String effectText,
+                       String archetype, int healthOnClaim, int spiritOnClaim,
+                       int lifespanOnClaim, int karmaOnClaim, int battleHealthBonus,
+                       int battleSpiritBonus, int combatDamageBonus, int combatBlockBonus,
+                       int combatSpiritGain, int combatPoisonBonus, int battleWeight,
+                       int eliteWeight, int treasureWeight, int configVersion, boolean enabled) {
+        this.name = name;
+        this.rarity = rarity;
+        this.description = description;
+        this.effectText = effectText;
+        this.archetype = archetype;
+        this.healthOnClaim = healthOnClaim;
+        this.spiritOnClaim = spiritOnClaim;
+        this.lifespanOnClaim = lifespanOnClaim;
+        this.karmaOnClaim = karmaOnClaim;
+        this.battleHealthBonus = battleHealthBonus;
+        this.battleSpiritBonus = battleSpiritBonus;
+        this.combatDamageBonus = combatDamageBonus;
+        this.combatBlockBonus = combatBlockBonus;
+        this.combatSpiritGain = combatSpiritGain;
+        this.combatPoisonBonus = combatPoisonBonus;
+        this.battleWeight = battleWeight;
+        this.eliteWeight = eliteWeight;
+        this.treasureWeight = treasureWeight;
+        this.configVersion = configVersion;
+        this.enabled = enabled;
+    }
+
+    public void setConfigVersion(int configVersion) {
+        this.configVersion = configVersion;
+    }
 }

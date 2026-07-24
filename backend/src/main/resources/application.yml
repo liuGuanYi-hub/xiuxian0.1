@@ -23,3 +23,6 @@ logging:
   level:
     com.xiuxian.roguelike: INFO
 
+app:
+  admin:
+    token: ${ADMIN_CONFIG_TOKEN:dev-admin-token}

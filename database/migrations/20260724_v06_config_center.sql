@@ -8,6 +8,11 @@ ALTER TABLE item_config
 ALTER TABLE talisman_config
   ADD COLUMN IF NOT EXISTS config_version INT NOT NULL DEFAULT 1;
 
+-- 兼容 V0.6 迁移前已经存在的卡牌：只修正无效版本号，不覆盖卡牌内容。
+UPDATE skill_config SET config_version = 1 WHERE config_version <= 0;
+UPDATE item_config SET config_version = 1 WHERE config_version <= 0;
+UPDATE talisman_config SET config_version = 1 WHERE config_version <= 0;
+
 CREATE TABLE IF NOT EXISTS event_config (
   event_id VARCHAR(80) PRIMARY KEY,
   config_type VARCHAR(20) NOT NULL DEFAULT 'EVENT',

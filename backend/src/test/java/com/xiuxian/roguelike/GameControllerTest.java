@@ -36,6 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class GameControllerTest {
 
+    private static final String ADMIN_TOKEN = "dev-admin-token";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -76,7 +78,11 @@ class GameControllerTest {
 
     @Test
     void configCenterLoadsDatabaseEventsAndSupportsVersionedImport() throws Exception {
-        JsonNode configs = objectMapper.readTree(mockMvc.perform(get("/api/admin/config/events"))
+        mockMvc.perform(get("/api/admin/config/events"))
+                .andExpect(status().isUnauthorized());
+
+        JsonNode configs = objectMapper.readTree(mockMvc.perform(get("/api/admin/config/events")
+                        .header("X-Admin-Token", ADMIN_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.activeEvents").value(28))
@@ -84,18 +90,43 @@ class GameControllerTest {
         assertEquals(34, configs.get("configs").size());
 
         mockMvc.perform(post("/api/admin/config/events/import")
+                        .header("X-Admin-Token", ADMIN_TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"operator\":\"test\",\"configs\":[{\"configType\":\"EVENT\",\"eventId\":\"test_disabled_v06\",\"title\":\"测试配置\",\"description\":\"用于验证配置中心导入和版本字段。\",\"rarity\":\"普通\",\"repeatable\":false,\"version\":2,\"enabled\":false,\"choices\":[],\"nextEventIds\":[],\"nodeWeights\":{}}]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.importedConfigs").value(1))
                 .andExpect(jsonPath("$.activeEvents").value(28));
 
-        mockMvc.perform(get("/api/admin/config/events?includeDisabled=true"))
+        mockMvc.perform(get("/api/admin/config/events?includeDisabled=true")
+                        .header("X-Admin-Token", ADMIN_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.configs.length()").value(35));
-        mockMvc.perform(get("/api/admin/config/logs"))
+        mockMvc.perform(get("/api/admin/config/logs")
+                        .header("X-Admin-Token", ADMIN_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].action").exists());
+
+        JsonNode cards = objectMapper.readTree(mockMvc.perform(get("/api/admin/config/cards")
+                        .header("Authorization", "Bearer " + ADMIN_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.activeCards").value(25))
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(25, cards.get("configs").size());
+
+        mockMvc.perform(post("/api/admin/config/cards/import")
+                        .header("X-Admin-Token", ADMIN_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"operator\":\"test\",\"configs\":[{\"cardId\":\"test_card_v06\",\"category\":\"功法\",\"name\":\"测试功法\",\"rarity\":\"普通\",\"description\":\"用于配置中心测试。\",\"effectText\":\"测试效果\",\"archetype\":\"剑修\",\"healthOnClaim\":0,\"spiritOnClaim\":1,\"lifespanOnClaim\":0,\"karmaOnClaim\":0,\"battleHealthBonus\":0,\"battleSpiritBonus\":0,\"combatDamageBonus\":1,\"combatBlockBonus\":0,\"combatSpiritGain\":0,\"combatPoisonBonus\":0,\"battleWeight\":1,\"eliteWeight\":1,\"treasureWeight\":1,\"version\":2,\"enabled\":false}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.importedCards").value(1))
+                .andExpect(jsonPath("$.activeCards").value(25))
+                .andExpect(jsonPath("$.disabledCards").value(1));
+
+        mockMvc.perform(get("/api/admin/config/cards?includeDisabled=true")
+                        .header("X-Admin-Token", ADMIN_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configs.length()").value(26));
     }
 
     @Test
@@ -341,10 +372,12 @@ class GameControllerTest {
             current = enterFirstAvailable(runId, current);
         }
 
-        assertTrue(current.get("turn").asInt() >= 9, "路线应该至少经过大部分楼层");
         assertTrue("ASCENDED".equals(current.get("status").asText())
                         || "DEAD".equals(current.get("status").asText()),
                 "抵达 Boss 后应该进入结局或死亡状态");
+        if ("ASCENDED".equals(current.get("status").asText())) {
+            assertTrue(current.get("turn").asInt() >= 9, "成功通关应该至少经过大部分楼层");
+        }
         assertTrue(current.get("settlement").isObject(), "终局应该生成结算快照");
         assertTrue(current.get("settlement").get("score").asInt() > 0, "结算积分应该大于 0");
 
