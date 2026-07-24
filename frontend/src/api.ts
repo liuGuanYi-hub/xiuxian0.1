@@ -1,4 +1,4 @@
-import type { GameRun } from './types'
+import type { GameRun, LeaderboardEntry } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api'
 
@@ -97,4 +97,8 @@ export function leaveShop(runId: string) {
 
 export function restoreRun(runId: string) {
   return request<GameRun>(`/game/runs/${encodeURIComponent(runId.trim())}`)
+}
+
+export function getLeaderboard(limit = 10) {
+  return request<LeaderboardEntry[]>(`/leaderboard?limit=${limit}`)
 }

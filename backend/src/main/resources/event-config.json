@@ -1,0 +1,1358 @@
+[
+  {
+    "configType": "EVENT",
+    "eventId": "ancient_city",
+    "title": "无名古城",
+    "description": "城门上没有文字，城中的石像却都朝着同一个方向跪拜。你的影子在这里比你先走了一步。",
+    "rarity": "稀有",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "进入城主府",
+        "hint": "古城最深的秘密，往往也藏着最深的危险",
+        "healthDelta": -14,
+        "spiritDelta": 10,
+        "lifespanDelta": -2,
+        "karmaDelta": 7,
+        "nextEventId": "dragon_vein",
+        "action": null
+      },
+      {
+        "label": "寻找城中幸存的灯火",
+        "hint": "也许还有人在等一个迟到很久的答案",
+        "healthDelta": 4,
+        "spiritDelta": 3,
+        "lifespanDelta": -2,
+        "karmaDelta": 5,
+        "nextEventId": "ghost",
+        "action": null
+      },
+      {
+        "label": "拆下城门上的镇魂钉",
+        "hint": "破坏旧秩序可以获得力量，也会放出东西",
+        "healthDelta": -10,
+        "spiritDelta": 15,
+        "lifespanDelta": -3,
+        "karmaDelta": -3,
+        "nextEventId": "venom",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "BATTLE": 3,
+      "EVENT": 10
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "auction",
+    "title": "天关黑市",
+    "description": "各方修士都在为渡劫准备最后的筹码。有人出售护心镜，也有人出售别人的命。",
+    "rarity": "稀有",
+    "repeatable": true,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "买下护心镜",
+        "hint": "灵石换取安全，剩下的路会轻松一些",
+        "healthDelta": 10,
+        "spiritDelta": -5,
+        "lifespanDelta": -1,
+        "karmaDelta": 0,
+        "nextEventId": "trial_prep",
+        "action": null
+      },
+      {
+        "label": "把一件因果深重的物品卖掉",
+        "hint": "短期获利，代价由未来承担；可以免费移除一张构筑卡",
+        "healthDelta": 5,
+        "spiritDelta": 0,
+        "lifespanDelta": -2,
+        "karmaDelta": -5,
+        "nextEventId": "trial_prep",
+        "action": "REMOVE_CARD_FREE"
+      },
+      {
+        "label": "什么也不买，保留全部底牌",
+        "hint": "不依赖外物，只相信自己的选择",
+        "healthDelta": 0,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 3,
+        "nextEventId": "trial_prep",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "trial_prep"
+    ],
+    "nodeWeights": {
+      "SHOP": 20
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "awaiting_node",
+    "title": "等待选择",
+    "description": "前方的道路正在因你的选择展开。请先从路线图中选择一个相邻节点。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "beast",
+    "title": "赤岭兽潮",
+    "description": "山岭深处传来连续的低吼，兽潮正沿着山谷向你所在的方向移动。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "借地势设阵抵挡",
+        "hint": "消耗灵力换取稳妥的战果",
+        "healthDelta": -8,
+        "spiritDelta": -2,
+        "lifespanDelta": 0,
+        "karmaDelta": 3,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "从兽潮缝隙中穿过",
+        "hint": "速度很快，但肉身会承受冲击",
+        "healthDelta": -15,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 1,
+        "nextEventId": "venom",
+        "action": null
+      },
+      {
+        "label": "寻找兽王谈判",
+        "hint": "以因果换取和平，结果无法预料",
+        "healthDelta": 0,
+        "spiritDelta": 2,
+        "lifespanDelta": -2,
+        "karmaDelta": 5,
+        "nextEventId": "library",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "moon",
+      "ghost",
+      "venom"
+    ],
+    "nodeWeights": {
+      "BATTLE": 60
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "camp",
+    "title": "雨夜篝火",
+    "description": "你在山腰点起篝火，同行者谈起各自的来处。火光之外，天劫的云层开始聚拢。",
+    "rarity": "普通",
+    "repeatable": true,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "与同行者交换修行心得",
+        "hint": "互相成就，灵力和因果都得到补益",
+        "healthDelta": 4,
+        "spiritDelta": 6,
+        "lifespanDelta": -2,
+        "karmaDelta": 3,
+        "nextEventId": "inner",
+        "action": null
+      },
+      {
+        "label": "独自闭关一夜",
+        "hint": "安静地整理收获，恢复部分气血",
+        "healthDelta": 12,
+        "spiritDelta": 0,
+        "lifespanDelta": -3,
+        "karmaDelta": 0,
+        "nextEventId": "thunder",
+        "action": null
+      },
+      {
+        "label": "趁夜赶路",
+        "hint": "提前靠近天关，却会损耗寿元",
+        "healthDelta": -5,
+        "spiritDelta": 2,
+        "lifespanDelta": -5,
+        "karmaDelta": 1,
+        "nextEventId": "auction",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "thunder",
+      "auction"
+    ],
+    "nodeWeights": {
+      "REST": 70
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "cave",
+    "title": "无名石窟",
+    "description": "石壁上的古篆在呼吸，洞底似乎藏着一件与自身有缘的东西。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "点燃灵火，仔细搜寻",
+        "hint": "需要灵力，但更容易找到真正的机缘",
+        "healthDelta": 0,
+        "spiritDelta": -5,
+        "lifespanDelta": 0,
+        "karmaDelta": 2,
+        "nextEventId": "seal",
+        "action": null
+      },
+      {
+        "label": "直接取走洞口的玉简",
+        "hint": "省下力气，但玉简上的气息有些不祥",
+        "healthDelta": -8,
+        "spiritDelta": 2,
+        "lifespanDelta": 0,
+        "karmaDelta": -2,
+        "nextEventId": "venom",
+        "action": null
+      },
+      {
+        "label": "退后观察石壁上的阵纹",
+        "hint": "谨慎会错过一些东西，也可能避开杀机",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": 1,
+        "karmaDelta": 1,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "beast",
+      "duel",
+      "seal"
+    ],
+    "nodeWeights": {
+      "SHOP": 10,
+      "TREASURE": 45
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "dragon_vein",
+    "title": "龙脉裂隙",
+    "description": "大地深处传来龙吟，裂隙里涌出的不是灵石，而是一缕带着古老意志的金色血气。",
+    "rarity": "传说",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "引龙血淬体",
+        "hint": "体魄会更强，但要承受龙意反噬",
+        "healthDelta": -22,
+        "spiritDelta": 8,
+        "lifespanDelta": -1,
+        "karmaDelta": 4,
+        "nextEventId": "sword_tomb",
+        "action": null
+      },
+      {
+        "label": "聆听龙脉的记忆",
+        "hint": "知道得越多，越难把自己当作普通修士",
+        "healthDelta": 0,
+        "spiritDelta": 14,
+        "lifespanDelta": -2,
+        "karmaDelta": 8,
+        "nextEventId": "vein",
+        "action": null
+      },
+      {
+        "label": "将裂隙重新封闭",
+        "hint": "放弃力量，换取一份天地认可",
+        "healthDelta": 8,
+        "spiritDelta": 0,
+        "lifespanDelta": 1,
+        "karmaDelta": 10,
+        "nextEventId": "inner",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "ELITE": 25,
+      "TREASURE": 20
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "duel",
+    "title": "剑台旧约",
+    "description": "一个背负断剑的修士认出了你身上的旧日信物，邀你在雨幕中完成一场迟到的决斗。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "正面接下这一剑",
+        "hint": "以伤换取对方的认可",
+        "healthDelta": -18,
+        "spiritDelta": 4,
+        "lifespanDelta": 0,
+        "karmaDelta": 3,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "以身法拖到对方力竭",
+        "hint": "不够堂皇，却是活下来的办法",
+        "healthDelta": -6,
+        "spiritDelta": -3,
+        "lifespanDelta": 0,
+        "karmaDelta": 0,
+        "nextEventId": "venom",
+        "action": null
+      },
+      {
+        "label": "放下兵刃，询问旧约真相",
+        "hint": "放下执念，或许能看见更远的路",
+        "healthDelta": 3,
+        "spiritDelta": 5,
+        "lifespanDelta": -2,
+        "karmaDelta": 6,
+        "nextEventId": "library",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "moon",
+      "ghost",
+      "venom"
+    ],
+    "nodeWeights": {
+      "BATTLE": 25
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "finish",
+    "title": "旅程终点",
+    "description": "这一局的故事已经写完。真正的修仙路，还在下一次选择之后。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "gate",
+    "title": "天门之外",
+    "description": "你回首人间，曾经做出的每个选择都化成了脚下的路。",
+    "rarity": "终局",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "踏入天门",
+        "hint": "结束本轮旅程，带着经历飞升",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 5,
+        "nextEventId": "finish",
+        "action": null
+      },
+      {
+        "label": "回望人间",
+        "hint": "放弃飞升，换取一次重来的机会",
+        "healthDelta": 10,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": -3,
+        "nextEventId": "finish",
+        "action": null
+      },
+      {
+        "label": "斩断因果",
+        "hint": "不问天地，不问来路",
+        "healthDelta": -30,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 10,
+        "nextEventId": "finish",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "finish"
+    ],
+    "nodeWeights": {
+      "BOSS": 10
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "ghost",
+    "title": "黄泉渡影",
+    "description": "你在荒废的城池里看见一队没有影子的行人。他们都在等一个不会再回来的人。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "替亡魂送出遗物",
+        "hint": "消耗寿元，却能洗去一段旧因果",
+        "healthDelta": 3,
+        "spiritDelta": 0,
+        "lifespanDelta": -5,
+        "karmaDelta": 7,
+        "nextEventId": "camp",
+        "action": null
+      },
+      {
+        "label": "跟随他们进入城心",
+        "hint": "阴气会侵蚀肉身，但秘密也藏在那里",
+        "healthDelta": -12,
+        "spiritDelta": 6,
+        "lifespanDelta": -2,
+        "karmaDelta": 2,
+        "nextEventId": "vein",
+        "action": null
+      },
+      {
+        "label": "立刻离开鬼城",
+        "hint": "不与亡者争路，稳妥地保存自己",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": 0,
+        "nextEventId": "camp",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "camp",
+      "inner",
+      "vein"
+    ],
+    "nodeWeights": {
+      "EVENT": 25
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "heavenly_omen",
+    "title": "天机显圣",
+    "description": "云层中浮出一只巨大的眼睛。它没有开口，却把你所有未完成的因果照得一清二楚。",
+    "rarity": "传说",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "请求天机指路",
+        "hint": "提前看见一条未来，但会失去一部分自由",
+        "healthDelta": 0,
+        "spiritDelta": 12,
+        "lifespanDelta": -3,
+        "karmaDelta": 6,
+        "nextEventId": "trial_prep",
+        "action": null
+      },
+      {
+        "label": "遮住天机之眼",
+        "hint": "不接受安排，代价是承受天地的注视",
+        "healthDelta": -15,
+        "spiritDelta": 8,
+        "lifespanDelta": -1,
+        "karmaDelta": -2,
+        "nextEventId": "trial_prep",
+        "action": null
+      },
+      {
+        "label": "向天机献上一段记忆",
+        "hint": "换取一次改变命数的机会",
+        "healthDelta": 8,
+        "spiritDelta": 4,
+        "lifespanDelta": -5,
+        "karmaDelta": 9,
+        "nextEventId": "trial_prep",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "ELITE": 15
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "herb",
+    "title": "百草谷口",
+    "description": "山谷里药香弥漫，几株灵草在月光下泛着微光。谷中弟子正为一味主药争执不休。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "帮忙辨认灵草",
+        "hint": "需要见识，也可能得到丹修的谢礼",
+        "healthDelta": 2,
+        "spiritDelta": 2,
+        "lifespanDelta": -1,
+        "karmaDelta": 2,
+        "nextEventId": "beast",
+        "action": null
+      },
+      {
+        "label": "趁乱采走一株灵药",
+        "hint": "眼下收益更高，但容易留下贪念",
+        "healthDelta": 8,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": -2,
+        "nextEventId": "library",
+        "action": null
+      },
+      {
+        "label": "询问谷中长老求取指点",
+        "hint": "耗费时间，却能让根基更加稳固",
+        "healthDelta": 5,
+        "spiritDelta": 3,
+        "lifespanDelta": -2,
+        "karmaDelta": 1,
+        "nextEventId": "market",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "beast",
+      "duel",
+      "seal"
+    ],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "inner",
+    "title": "心魔初醒",
+    "description": "你在识海中看见了另一个自己。它知道你所有没有说出口的欲望。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "承认自己的恐惧",
+        "hint": "心魔不会消失，但它不再能随意操控你",
+        "healthDelta": -5,
+        "spiritDelta": 4,
+        "lifespanDelta": -1,
+        "karmaDelta": 8,
+        "nextEventId": "thunder",
+        "action": null
+      },
+      {
+        "label": "以杀意镇压心魔",
+        "hint": "短时间内力量暴涨，心神却留下裂痕",
+        "healthDelta": -18,
+        "spiritDelta": 12,
+        "lifespanDelta": -2,
+        "karmaDelta": -4,
+        "nextEventId": "auction",
+        "action": null
+      },
+      {
+        "label": "暂时封闭识海",
+        "hint": "保守地拖延问题，换取一点喘息时间",
+        "healthDelta": 4,
+        "spiritDelta": -4,
+        "lifespanDelta": -3,
+        "karmaDelta": 1,
+        "nextEventId": "thunder",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "thunder",
+      "auction"
+    ],
+    "nodeWeights": {
+      "REST": 20
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "library",
+    "title": "残经阁",
+    "description": "雨声敲打着残经阁的窗棂。一本没有名字的古籍在书架尽头为你翻开一页。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "记下运转灵力的口诀",
+        "hint": "功法的雏形正在心中生根",
+        "healthDelta": 0,
+        "spiritDelta": 8,
+        "lifespanDelta": -1,
+        "karmaDelta": 2,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "寻找与自身出身有关的记载",
+        "hint": "真相往往比力量更沉重",
+        "healthDelta": 2,
+        "spiritDelta": 3,
+        "lifespanDelta": -1,
+        "karmaDelta": 4,
+        "nextEventId": "ghost",
+        "action": null
+      },
+      {
+        "label": "合上古籍，避免沾染因果",
+        "hint": "谨慎保命，但会少一份机缘",
+        "healthDelta": 4,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 0,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "market",
+    "title": "青石坊市",
+    "description": "坊市灯火通明，摊主们将真假难辨的机缘摆在你面前。",
+    "rarity": "普通",
+    "repeatable": true,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "买下一颗来历不明的丹药",
+        "hint": "效果未知，但修仙路上从不缺赌徒",
+        "healthDelta": 10,
+        "spiritDelta": 0,
+        "lifespanDelta": -2,
+        "karmaDelta": -1,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "替人解决一桩小麻烦",
+        "hint": "不一定赚钱，却能积累名声",
+        "healthDelta": 5,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": 3,
+        "nextEventId": "library",
+        "action": null
+      },
+      {
+        "label": "什么也不买，观察众人",
+        "hint": "节省资源，等待更好的机会",
+        "healthDelta": 0,
+        "spiritDelta": 3,
+        "lifespanDelta": 0,
+        "karmaDelta": 0,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "SHOP": 70
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "moon",
+    "title": "月下荒林",
+    "description": "林中传来微弱的呼救声。你看见一只受伤的白狐，和它身后的追兵。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "救下白狐",
+        "hint": "结下妖族因果，未来或许另有回报",
+        "healthDelta": -5,
+        "spiritDelta": -3,
+        "lifespanDelta": -2,
+        "karmaDelta": 6,
+        "nextEventId": "camp",
+        "action": null
+      },
+      {
+        "label": "绕路离开",
+        "hint": "少惹麻烦，但心中似乎留下了一根刺",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": -1,
+        "nextEventId": "ghost",
+        "action": null
+      },
+      {
+        "label": "反过来设伏追兵",
+        "hint": "风险很高，胜利后能得到战利品",
+        "healthDelta": -12,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 2,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "camp",
+      "inner",
+      "vein"
+    ],
+    "nodeWeights": {
+      "EVENT": 30
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "river",
+    "title": "黑水渡口",
+    "description": "暮色中的黑水河拦住去路。渡船老人不问灵石，只问你是否相信因果。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "交出三枚灵石，请老人渡河",
+        "hint": "稳妥，但会失去一点修行资源",
+        "healthDelta": 0,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 1,
+        "nextEventId": "herb",
+        "action": null
+      },
+      {
+        "label": "踏浪而行，以灵力强渡",
+        "hint": "消耗灵力，可能更快抵达彼岸",
+        "healthDelta": -5,
+        "spiritDelta": -8,
+        "lifespanDelta": 0,
+        "karmaDelta": 0,
+        "nextEventId": "sect",
+        "action": null
+      },
+      {
+        "label": "留下来替老人修补渡船",
+        "hint": "耗费时间，却可能结下一段善缘",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": -3,
+        "karmaDelta": 3,
+        "nextEventId": "cave",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "herb",
+      "sect",
+      "cave"
+    ],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "seal",
+    "title": "封印之下",
+    "description": "石窟最深处传来心跳声，九道符箓正在慢慢失去光泽。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "加固封印",
+        "hint": "消耗灵力，却能避免一场灾祸",
+        "healthDelta": 0,
+        "spiritDelta": -10,
+        "lifespanDelta": -1,
+        "karmaDelta": 5,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "揭开一道符箓",
+        "hint": "力量会立刻涌入体内，但代价也会跟来",
+        "healthDelta": -12,
+        "spiritDelta": 12,
+        "lifespanDelta": -2,
+        "karmaDelta": -4,
+        "nextEventId": "venom",
+        "action": null
+      },
+      {
+        "label": "记下符文后离开",
+        "hint": "暂时不碰危险，把秘密留到以后",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 1,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "moon",
+      "ghost",
+      "venom"
+    ],
+    "nodeWeights": {
+      "BATTLE": 12
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "sect",
+    "title": "山门问心",
+    "description": "一座无名宗门挡在山路尽头。守门石碑映出你的来路，也映出你不愿面对的念头。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "接受问心石考验",
+        "hint": "直面心魔，可能获得宗门认可",
+        "healthDelta": -5,
+        "spiritDelta": 5,
+        "lifespanDelta": -1,
+        "karmaDelta": 4,
+        "nextEventId": "duel",
+        "action": null
+      },
+      {
+        "label": "以剑意叩门",
+        "hint": "锋芒会换来注意，也会换来挑战",
+        "healthDelta": -8,
+        "spiritDelta": 8,
+        "lifespanDelta": 0,
+        "karmaDelta": 1,
+        "nextEventId": "library",
+        "action": null
+      },
+      {
+        "label": "绕过山门继续赶路",
+        "hint": "不惹因果，但会错过部分传承",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": -2,
+        "karmaDelta": -1,
+        "nextEventId": "market",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "beast",
+      "duel",
+      "seal"
+    ],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "starfall",
+    "title": "星陨荒原",
+    "description": "夜空突然裂开一道缝隙，一颗燃烧的星核坠落在荒原中央。附近的修士都说，那是天道遗落的眼睛。",
+    "rarity": "稀有",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "靠近星核观察",
+        "hint": "灵力会被星火灼烧，但可能看见未来的一角",
+        "healthDelta": -12,
+        "spiritDelta": 12,
+        "lifespanDelta": -1,
+        "karmaDelta": 5,
+        "nextEventId": "ancient_city",
+        "action": null
+      },
+      {
+        "label": "以阵法封存星火",
+        "hint": "把危险机缘变成可以携带的力量",
+        "healthDelta": -5,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 3,
+        "nextEventId": "duel",
+        "action": null
+      },
+      {
+        "label": "远离坠星之地",
+        "hint": "不被天外因果牵连，也不会错过眼前的安全",
+        "healthDelta": 3,
+        "spiritDelta": 0,
+        "lifespanDelta": 0,
+        "karmaDelta": 0,
+        "nextEventId": "seal",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "EVENT": 15
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "sword_tomb",
+    "title": "万剑冢门",
+    "description": "无数残剑插在黑色山谷里，风吹过时像有万名剑修同时叹息。最深处的一柄剑正在等你。",
+    "rarity": "稀有",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "拔出无名古剑",
+        "hint": "剑会替你斩开一条路，也会要求你付出代价",
+        "healthDelta": -20,
+        "spiritDelta": 12,
+        "lifespanDelta": -2,
+        "karmaDelta": 4,
+        "nextEventId": "heavenly_omen",
+        "action": null
+      },
+      {
+        "label": "向万剑行礼后离开",
+        "hint": "不取不求，反而可能得到剑冢的认可",
+        "healthDelta": 5,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 7,
+        "nextEventId": "thunder",
+        "action": null
+      },
+      {
+        "label": "以自身剑意回应山谷",
+        "hint": "让残剑记住你的名字",
+        "healthDelta": -8,
+        "spiritDelta": 10,
+        "lifespanDelta": -1,
+        "karmaDelta": 5,
+        "nextEventId": "auction",
+        "action": null
+      }
+    ],
+    "nextEventIds": [],
+    "nodeWeights": {
+      "ELITE": 35,
+      "TREASURE": 10
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "thunder",
+    "title": "九霄雷池",
+    "description": "第一道雷光落在远山，空气中满是金铁烧灼的味道。你必须选择渡劫的立足之处。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "站上最高的山巅",
+        "hint": "直面雷劫，成功后根基最为扎实",
+        "healthDelta": -18,
+        "spiritDelta": -8,
+        "lifespanDelta": -3,
+        "karmaDelta": 4,
+        "nextEventId": "auction",
+        "action": null
+      },
+      {
+        "label": "借雷淬炼肉身",
+        "hint": "气血会被反复撕裂，但体魄可能脱胎换骨",
+        "healthDelta": -25,
+        "spiritDelta": -2,
+        "lifespanDelta": -2,
+        "karmaDelta": 5,
+        "nextEventId": "auction",
+        "action": null
+      },
+      {
+        "label": "寻找雷云间隙",
+        "hint": "避开最猛烈的雷光，但会失去部分机缘",
+        "healthDelta": -8,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": 0,
+        "nextEventId": "auction",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "trial_prep"
+    ],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "trial",
+    "title": "筑基雷劫",
+    "description": "雷海压下，过往十余次选择同时回响。你已经没有办法把责任交给任何人。",
+    "rarity": "Boss",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "以积累的灵力强行冲关",
+        "hint": "灵力越多，成功的可能越高",
+        "healthDelta": -18,
+        "spiritDelta": -14,
+        "lifespanDelta": -4,
+        "karmaDelta": 2,
+        "nextEventId": "tribulation",
+        "action": null
+      },
+      {
+        "label": "以肉身硬抗九道天雷",
+        "hint": "气血越厚，越可能活着走出雷池",
+        "healthDelta": -28,
+        "spiritDelta": -4,
+        "lifespanDelta": -3,
+        "karmaDelta": 3,
+        "nextEventId": "tribulation",
+        "action": null
+      },
+      {
+        "label": "以因果之力换取突破",
+        "hint": "善恶终有代价，突破也不例外",
+        "healthDelta": -20,
+        "spiritDelta": 0,
+        "lifespanDelta": -8,
+        "karmaDelta": 10,
+        "nextEventId": "tribulation",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "tribulation"
+    ],
+    "nodeWeights": {
+      "ELITE": 25,
+      "BOSS": 70
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "trial_prep",
+    "title": "筑基天关前",
+    "description": "天门就在云海尽头。最后一夜，你可以整理自己的道心，也可以把一切押在下一步。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "稳固根基，准备渡劫",
+        "hint": "减少风险，保留较多寿元",
+        "healthDelta": 8,
+        "spiritDelta": -4,
+        "lifespanDelta": -2,
+        "karmaDelta": 2,
+        "nextEventId": "trial",
+        "action": null
+      },
+      {
+        "label": "燃烧寿元换取灵力",
+        "hint": "突破机会更大，但生命正在倒计时",
+        "healthDelta": -5,
+        "spiritDelta": 15,
+        "lifespanDelta": -8,
+        "karmaDelta": 1,
+        "nextEventId": "trial",
+        "action": null
+      },
+      {
+        "label": "以因果之力观测天门",
+        "hint": "看见更多可能，也背负更多天地注视",
+        "healthDelta": -8,
+        "spiritDelta": 5,
+        "lifespanDelta": -3,
+        "karmaDelta": 8,
+        "nextEventId": "trial",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "trial"
+    ],
+    "nodeWeights": {
+      "REST": 10
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "tribulation",
+    "title": "天门回响",
+    "description": "最后一道雷光没有落下。天门之外传来一个声音，问你究竟为何修仙。",
+    "rarity": "Boss",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "为了守住重要的人",
+        "hint": "执念让道心变得坚定，也让因果变得沉重",
+        "healthDelta": 5,
+        "spiritDelta": 0,
+        "lifespanDelta": -2,
+        "karmaDelta": 8,
+        "nextEventId": "gate",
+        "action": null
+      },
+      {
+        "label": "为了看见天地尽头",
+        "hint": "求知没有尽头，修行也没有尽头",
+        "healthDelta": 0,
+        "spiritDelta": 8,
+        "lifespanDelta": -2,
+        "karmaDelta": 3,
+        "nextEventId": "gate",
+        "action": null
+      },
+      {
+        "label": "为了证明自己不会认输",
+        "hint": "锋芒可以破局，却也最容易伤到自己",
+        "healthDelta": -8,
+        "spiritDelta": 5,
+        "lifespanDelta": -1,
+        "karmaDelta": -1,
+        "nextEventId": "gate",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "gate"
+    ],
+    "nodeWeights": {
+      "BOSS": 20
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "vein",
+    "title": "地脉回响",
+    "description": "脚下的山脉像巨兽一样翻身，地底灵脉将一缕本源之气送到你面前。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "引灵入体",
+        "hint": "灵力大涨，但经脉会承受负担",
+        "healthDelta": -10,
+        "spiritDelta": 15,
+        "lifespanDelta": -1,
+        "karmaDelta": 2,
+        "nextEventId": "inner",
+        "action": null
+      },
+      {
+        "label": "封存本源",
+        "hint": "不急着使用，为渡劫留下底牌",
+        "healthDelta": 5,
+        "spiritDelta": 5,
+        "lifespanDelta": 0,
+        "karmaDelta": 1,
+        "nextEventId": "thunder",
+        "action": null
+      },
+      {
+        "label": "将本源还给地脉",
+        "hint": "因果减少，天地会记住你的选择",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": 2,
+        "karmaDelta": 8,
+        "nextEventId": "auction",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "thunder",
+      "auction"
+    ],
+    "nodeWeights": {
+      "TREASURE": 25
+    }
+  },
+  {
+    "configType": "EVENT",
+    "eventId": "venom",
+    "title": "百毒潭边",
+    "description": "雾气从黑色水潭升起，你的经脉开始发麻。潭心的莲花却散发着清明气息。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [
+      {
+        "label": "服下解毒丹强行渡过",
+        "hint": "保住气血，但会消耗珍贵丹药",
+        "healthDelta": -5,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": 1,
+        "nextEventId": "moon",
+        "action": null
+      },
+      {
+        "label": "采下毒莲，以毒攻毒",
+        "hint": "高风险的修行方式，可能带来奇效",
+        "healthDelta": -20,
+        "spiritDelta": 10,
+        "lifespanDelta": -2,
+        "karmaDelta": -2,
+        "nextEventId": "ghost",
+        "action": null
+      },
+      {
+        "label": "退回安全地带",
+        "hint": "不冒险，至少不会在这里结束",
+        "healthDelta": 0,
+        "spiritDelta": 0,
+        "lifespanDelta": -1,
+        "karmaDelta": 0,
+        "nextEventId": "vein",
+        "action": null
+      }
+    ],
+    "nextEventIds": [
+      "camp",
+      "inner",
+      "vein"
+    ],
+    "nodeWeights": {
+      "EVENT": 20
+    }
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "causality_breaker",
+    "title": "断因绝果",
+    "description": "你斩断了所有既定因果，连天道也无法再为你写下结局。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "demon_sovereign",
+    "title": "逆命魔尊",
+    "description": "你以反噬和执念为薪，踏出了一条无人敢走的逆命之路。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "fallen_path",
+    "title": "道途断绝",
+    "description": "这一世的寿元和肉身都走到了尽头，但因果簿仍在等待下一次落笔。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "free_wanderer",
+    "title": "逍遥散仙",
+    "description": "你放弃了天门尽头的答案，带着一身故事回到天地之间。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "heavenly_ascension",
+    "title": "天门飞升",
+    "description": "你以纯粹灵力贯通天门，成为云海之上的新客。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  },
+  {
+    "configType": "ENDING",
+    "eventId": "red_dust_sage",
+    "title": "红尘道君",
+    "description": "你没有斩断人间，反而把一路结下的因果炼成了自己的道。",
+    "rarity": "??",
+    "repeatable": false,
+    "version": 1,
+    "enabled": true,
+    "choices": [],
+    "nextEventIds": [],
+    "nodeWeights": {}
+  }
+]

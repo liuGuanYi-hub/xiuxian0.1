@@ -91,6 +91,20 @@ public final class GameDtos {
                              List<CombatActionView> actions, List<String> recentLog) {
     }
 
+    public record ConfigStatusView(int activeEvents, int activeEndings, int maxVersion, boolean valid) {
+    }
+
+    public record SettlementView(String runId, String playerName, String origin, String status,
+                                 String endingId, String endingTitle, int floorReached, int turn,
+                                 int health, int spirit, int lifespan, int karma, int spiritStones,
+                                 int activeCards, int eliteCount, int score, String settledAt) {
+    }
+
+    public record LeaderboardEntryView(int rank, String runId, String playerName, String origin,
+                                       String status, String endingTitle, int floorReached, int turn,
+                                       int score, String settledAt) {
+    }
+
     public record GameRunView(
             String id,
             String playerName,
@@ -115,6 +129,8 @@ public final class GameDtos {
             ShopView shop,
             RemovalView removal,
             CombatView combat,
+            ConfigStatusView configStatus,
+            SettlementView settlement,
             List<String> logs
     ) {
     }

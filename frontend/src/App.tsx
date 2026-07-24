@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import { ArrowRight, Coins, Compass, Crosshair, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, Shield, ShoppingBag, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
-import { buyShopOffer, chooseEvent, claimReward, combatAction, enterNode, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
-import type { BuildStats, CombatView, GameRun, MapNode, RemovalState, RewardOffer, ShopState } from './types'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ArrowRight, Coins, Compass, Crosshair, Database, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, Shield, ShoppingBag, Sparkles, Trash2, TriangleAlert, Trophy } from 'lucide-react'
+import { buyShopOffer, chooseEvent, claimReward, combatAction, enterNode, getLeaderboard, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
+import type { BuildStats, CombatView, GameRun, LeaderboardEntry, MapNode, RemovalState, RewardOffer, ShopState } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -24,8 +24,17 @@ function App() {
   const [origin, setOrigin] = useState(origins[0].value)
   const [restoreId, setRestoreId] = useState('')
   const [run, setRun] = useState<GameRun | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    void getLeaderboard().then((entries) => {
+      if (!cancelled) setLeaderboard(entries)
+    }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [run?.status])
 
   async function begin() {
     if (!name.trim()) {
@@ -265,6 +274,7 @@ function App() {
               </button>
             </div>
           </div>
+          <LeaderboardPanel entries={leaderboard} />
           <p className="technical-note">React 前端 · Java Spring Boot · MySQL 存档</p>
         </section>
       </main>
@@ -297,6 +307,7 @@ function App() {
 
       <BuildPanel cards={run.build} />
       <BuildStatsPanel stats={run.buildStats} />
+      <ConfigStatusPanel status={run.configStatus} />
 
       {run.rewardOffers.length > 0 && (
         <RewardPanel offers={run.rewardOffers} loading={loading} onClaim={(rewardId) => void claimBuildReward(rewardId)} />
@@ -384,6 +395,8 @@ function App() {
           </div>
         </section>
       )}
+
+      {run.settlement && <SettlementPanel settlement={run.settlement} />}
 
       {error && <p className="error-text game-error"><TriangleAlert size={15} />{error}</p>}
       <section className="log-card">
@@ -497,6 +510,55 @@ function BuildStatsPanel({ stats }: { stats: BuildStats }) {
         <span><Flame size={14} />调息 +{stats.combatSpiritGain}</span>
         <span><Sparkles size={14} />战技中毒 +{stats.combatPoisonBonus}</span>
       </div>
+    </section>
+  )
+}
+
+function ConfigStatusPanel({ status }: { status: GameRun['configStatus'] }) {
+  return (
+    <section className="config-status-panel">
+      <div className="section-heading">
+        <span><Database size={15} />内容配置中心</span>
+        <span className={`config-health ${status.valid ? 'valid' : 'invalid'}`}>{status.valid ? '校验通过' : '需要检查'}</span>
+      </div>
+      <div className="config-status-grid">
+        <span><strong>{status.activeEvents}</strong><small>启用事件</small></span>
+        <span><strong>{status.activeEndings}</strong><small>启用结局</small></span>
+        <span><strong>V{status.maxVersion}</strong><small>最高版本</small></span>
+      </div>
+      <p className="config-status-note">本局路线、事件正文、稀有度和选项由服务端数据库配置驱动。</p>
+    </section>
+  )
+}
+
+function SettlementPanel({ settlement }: { settlement: NonNullable<GameRun['settlement']> }) {
+  return (
+    <section className={`settlement-panel ${settlement.status === 'ASCENDED' ? 'ascended' : 'fallen'}`}>
+      <div className="settlement-score"><Trophy size={22} /><strong>{settlement.score}</strong><small>本局积分</small></div>
+      <div>
+        <p className="event-kicker">结算快照 · {settlement.status === 'ASCENDED' ? '飞升' : '道途断绝'}</p>
+        <h2>{settlement.endingTitle}</h2>
+        <p>抵达第 {settlement.floorReached} 层 · {settlement.turn} 回合 · {settlement.eliteCount} 次精英挑战 · {settlement.activeCards} 张有效卡</p>
+      </div>
+    </section>
+  )
+}
+
+function LeaderboardPanel({ entries }: { entries: LeaderboardEntry[] }) {
+  return (
+    <section className="leaderboard-panel">
+      <div className="section-heading"><span><Trophy size={15} />天道榜</span><small>已完成旅程</small></div>
+      {entries.length === 0 ? <p className="leaderboard-empty">还没有完成的修士，等你留下第一份结算。</p> : (
+        <div className="leaderboard-list">
+          {entries.slice(0, 5).map((entry) => (
+            <div className="leaderboard-row" key={entry.runId}>
+              <span className="leaderboard-rank">{String(entry.rank).padStart(2, '0')}</span>
+              <span className="leaderboard-player"><strong>{entry.playerName}</strong><small>{entry.endingTitle} · 第 {entry.floorReached} 层</small></span>
+              <strong className="leaderboard-score">{entry.score}</strong>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

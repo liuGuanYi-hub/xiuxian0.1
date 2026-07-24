@@ -30,6 +30,9 @@
 - 条件化奖励池：精英、楼层、节点稀有度、事件稀有度和当前流派都会影响权重
 - 构筑统计面板：卡牌类别、流派数量、协同说明和战斗主要加成
 - 25 张卡牌通过 `card-config.json` 幂等初始化到 `skill_config`、`item_config`、`talisman_config`，新增 8 张战斗专属卡牌
+- V0.6 事件配置中心：28 个事件、6 个结局和 78 个选项从 `event-config.json` 幂等初始化到 `event_config`
+- 事件配置支持版本号、启用状态、JSON 导入、引用校验、缓存重载和操作日志，不改 Java 核心即可调整内容
+- V0.6 终局自动生成不可变结算快照，按进度、属性、精英和构筑计算积分，并提供天道榜
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
 - React 前端展示路线图、节点连线、当前事件和修仙日志
@@ -90,6 +93,12 @@ npm run dev
 | POST | `/api/game/runs/{id}/shops/refresh` | 消耗递增灵石刷新坊市 |
 | POST | `/api/game/runs/{id}/shops/remove/{cardId}` | 消耗 30 灵石移除坊市卡牌 |
 | POST | `/api/game/runs/{id}/shops/leave` | 关闭坊市并解锁下一层 |
+| GET | `/api/admin/config/events` | 查询事件/结局配置和校验状态 |
+| POST | `/api/admin/config/events/import` | 导入版本化事件 JSON 配置 |
+| POST | `/api/admin/config/validate` | 校验当前启用配置并写入操作日志 |
+| POST | `/api/admin/config/reload` | 重载事件配置缓存并校验 |
+| GET | `/api/admin/config/logs` | 查看最近 50 条配置操作日志 |
+| GET | `/api/leaderboard?limit=10` | 查询已完成旅程的积分排行榜 |
 
 完整请求/响应字段说明见：[API.md](./API.md)；V0.4 逐项验收见：[V0.4_ACCEPTANCE.md](./V0.4_ACCEPTANCE.md)。
 

@@ -139,6 +139,36 @@ h1, h2, p { margin-top: 0; }
 .synergy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .synergy-item { min-height: 67px; padding: 10px; border: 1px solid #334654; background: #14222d; }.synergy-item.active { border-color: #80623c; background: rgba(106, 77, 42, .22); }.synergy-item > div { display: flex; justify-content: space-between; gap: 8px; }.synergy-item strong { color: #d8c9ae; font-size: 12px; }.synergy-item span { color: #d8ad69; font-family: system-ui, sans-serif; font-size: 10px; }.synergy-item small { display: block; margin-top: 7px; color: #81909d; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.4; }
 .battle-bonus-row { display: flex; flex-wrap: wrap; gap: 8px 15px; margin-top: 17px; padding-top: 13px; border-top: 1px solid #293846; color: #9eb5b8; font-family: system-ui, sans-serif; font-size: 11px; }.battle-bonus-row span { display: inline-flex; align-items: center; gap: 5px; }
+
+.config-status-panel { padding: 18px 20px; border: 1px solid rgba(111, 164, 173, 0.22); border-radius: 18px; background: rgba(21, 36, 45, 0.72); }
+.config-status-panel .section-heading { display: flex; align-items: center; justify-content: space-between; }
+.config-status-panel .section-heading > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.config-health { padding: 4px 9px; border-radius: 999px; font-size: 12px; }
+.config-health.valid { color: #bdebcf; background: rgba(85, 177, 120, 0.18); }
+.config-health.invalid { color: #ffd0bd; background: rgba(196, 91, 69, 0.2); }
+.config-status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.config-status-grid span { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); }
+.config-status-grid strong { color: #edf4e8; font-size: 18px; }
+.config-status-grid small, .config-status-note { color: #9daeb1; font-size: 12px; }
+.config-status-note { margin: 12px 0 0; }
+
+.leaderboard-panel { margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(199, 176, 125, 0.16); }
+.leaderboard-panel .section-heading { display: flex; align-items: center; justify-content: space-between; }
+.leaderboard-panel .section-heading span { display: inline-flex; align-items: center; gap: 8px; color: #ead7ac; }
+.leaderboard-list { display: grid; gap: 7px; margin-top: 12px; }
+.leaderboard-row { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.035); }
+.leaderboard-rank { color: #c8a96d; font-family: ui-monospace, monospace; font-size: 12px; }
+.leaderboard-player { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.leaderboard-player strong { overflow: hidden; color: #e8ece2; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-player small, .leaderboard-empty { color: #9daeb1; font-size: 11px; }
+.leaderboard-score { color: #e7c477; font-family: ui-monospace, monospace; }
+.settlement-panel { display: flex; align-items: center; gap: 20px; margin-bottom: 18px; padding: 20px 24px; border: 1px solid #526c59; border-radius: 16px; background: linear-gradient(135deg, rgba(38, 59, 47, .9), rgba(22, 35, 40, .96)); }
+.settlement-panel.fallen { border-color: #76504d; background: linear-gradient(135deg, rgba(57, 39, 42, .9), rgba(22, 29, 37, .96)); }
+.settlement-score { display: flex; flex: 0 0 72px; flex-direction: column; align-items: center; gap: 2px; color: #e7c477; }
+.settlement-score strong { font-size: 24px; }
+.settlement-score small { color: #aeb9ad; font-size: 11px; }
+.settlement-panel h2 { margin: 8px 0; color: #f0dfbd; }
+.settlement-panel p:last-child { margin: 0; color: #b8c6bd; line-height: 1.7; }
 .reward-panel { margin-bottom: 18px; padding: clamp(22px, 4vw, 34px); border: 1px solid rgba(216, 173, 105, .35); background: linear-gradient(145deg, rgba(51, 45, 39, .95), rgba(23, 31, 39, .98)); }
 .reward-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .reward-heading h2 { margin: 10px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 33px); }

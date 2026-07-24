@@ -1,0 +1,76 @@
+package com.xiuxian.roguelike.api;
+
+import com.xiuxian.roguelike.api.ConfigDtos.ConfigImportView;
+import com.xiuxian.roguelike.api.ConfigDtos.ConfigValidationView;
+import com.xiuxian.roguelike.api.ConfigDtos.EventConfigImportRequest;
+import com.xiuxian.roguelike.api.ConfigDtos.EventConfigInput;
+import com.xiuxian.roguelike.api.ConfigDtos.EventConfigListView;
+import com.xiuxian.roguelike.service.EventConfigService;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/config")
+public class ConfigController {
+
+    private final EventConfigService eventConfigService;
+
+    public ConfigController(EventConfigService eventConfigService) {
+        this.eventConfigService = eventConfigService;
+    }
+
+    @GetMapping("/events")
+    public EventConfigListView events(
+            @RequestParam(defaultValue = "false") boolean includeDisabled) {
+        EventConfigService.ValidationResult validation = eventConfigService.validateCurrent();
+        return new EventConfigListView(eventConfigService.allConfigs(includeDisabled), validation.valid(),
+                validation.checkedConfigs(), validation.message(), eventConfigService.activeEventCount());
+    }
+
+    @PostMapping("/events/import")
+    public ConfigImportView importEvents(@Valid @RequestBody EventConfigImportRequest request) {
+        EventConfigService.ImportResult result = eventConfigService.importConfigs(
+                request.configs().stream().map(this::toPayload).toList(), request.operator());
+        return new ConfigImportView(result.importedConfigs(), result.checkedConfigs(), result.activeEvents(),
+                result.activeEndings(), result.validationMessage());
+    }
+
+    @PostMapping("/validate")
+    public ConfigValidationView validate(@RequestParam(defaultValue = "admin") String operator) {
+        EventConfigService.ValidationResult result = eventConfigService.validateAndLog(operator);
+        return new ConfigValidationView(result.valid(), result.checkedConfigs(), result.message());
+    }
+
+    @PostMapping("/reload")
+    public ConfigValidationView reload(@RequestParam(defaultValue = "admin") String operator) {
+        EventConfigService.ValidationResult result = eventConfigService.reloadAndValidate(operator);
+        return new ConfigValidationView(result.valid(), result.checkedConfigs(), result.message());
+    }
+
+    @GetMapping("/logs")
+    public List<EventConfigService.OperationLogView> logs() {
+        return eventConfigService.recentLogs();
+    }
+
+    private EventConfigService.EventConfigPayload toPayload(EventConfigInput input) {
+        List<EventConfigService.ChoicePayload> choices = input.choices() == null
+                ? List.of()
+                : input.choices().stream().map(choice -> new EventConfigService.ChoicePayload(
+                        choice.label(), choice.hint(), choice.healthDelta(), choice.spiritDelta(),
+                        choice.lifespanDelta(), choice.karmaDelta(), choice.nextEventId(), choice.action()
+                )).toList();
+        return new EventConfigService.EventConfigPayload(
+                input.configType(), input.eventId(), input.title(), input.description(), input.rarity(),
+                input.repeatable(), input.version(), input.enabled(), choices,
+                input.nextEventIds() == null ? List.of() : input.nextEventIds(),
+                input.nodeWeights() == null ? java.util.Map.of() : input.nodeWeights()
+        );
+    }
+}

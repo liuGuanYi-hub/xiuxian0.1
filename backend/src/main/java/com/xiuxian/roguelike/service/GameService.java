@@ -4,6 +4,8 @@ import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceView;
 import com.xiuxian.roguelike.api.GameDtos.CombatActionRequest;
 import com.xiuxian.roguelike.api.GameDtos.CombatView;
+import com.xiuxian.roguelike.api.GameDtos.ConfigStatusView;
+import com.xiuxian.roguelike.api.GameDtos.SettlementView;
 import com.xiuxian.roguelike.api.GameDtos.BuildCardView;
 import com.xiuxian.roguelike.api.GameDtos.BuildStatsView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
@@ -50,13 +52,16 @@ public class GameService {
     private final RunMapService runMapService;
     private final BuildService buildService;
     private final BuildConfigService configService;
+    private final EventConfigService eventConfigService;
     private final CombatService combatService;
+    private final SettlementService settlementService;
 
     public GameService(GameRunRepository gameRunRepository, RunEventRepository runEventRepository,
                        BuildItemRepository buildItemRepository, RewardOfferRepository rewardOfferRepository,
                        RunShopRepository runShopRepository, RunShopOfferRepository runShopOfferRepository,
                        RunMapService runMapService, BuildService buildService, BuildConfigService configService,
-                       CombatService combatService) {
+                       EventConfigService eventConfigService, CombatService combatService,
+                       SettlementService settlementService) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
         this.buildItemRepository = buildItemRepository;
@@ -66,7 +71,9 @@ public class GameService {
         this.runMapService = runMapService;
         this.buildService = buildService;
         this.configService = configService;
+        this.eventConfigService = eventConfigService;
         this.combatService = combatService;
+        this.settlementService = settlementService;
     }
 
     @Transactional
@@ -141,8 +148,8 @@ public class GameService {
             if (!boss) {
                 run.setPendingRewardNode(node.getId());
                 node.markRewardPending();
-                EventCatalog.EventDefinition event = EventCatalog.get(node.getContentId());
-                rewardOfferRepository.saveAll(buildService.createOffers(run, node, EventCatalog.meta(event.id()),
+                EventCatalog.EventDefinition event = eventConfigService.get(node.getContentId());
+                rewardOfferRepository.saveAll(buildService.createOffers(run, node, eventConfigService.meta(event.id()),
                         countClearedElites(runMapService.getNodes(run.getId()))));
                 allNodesLogs.add("战斗胜利：请选择一张新的构筑卡牌。" );
             } else {
@@ -159,6 +166,9 @@ public class GameService {
         gameRunRepository.save(run);
         if (result.won() || result.lost()) {
             runMapService.saveNode(node);
+        }
+        if (!"RUNNING".equals(run.getStatus())) {
+            settlementService.ensure(run);
         }
         return toView(run, allNodesLogs);
     }
@@ -191,8 +201,8 @@ public class GameService {
             throw new IllegalStateException("当前节点不是可结算状态。");
         }
 
-        EventCatalog.EventDefinition event = EventCatalog.get(run.getCurrentEventId());
-        EventCatalog.EventMeta eventMeta = EventCatalog.meta(event.id());
+        EventCatalog.EventDefinition event = eventConfigService.get(run.getCurrentEventId());
+        EventCatalog.EventMeta eventMeta = eventConfigService.meta(event.id());
         int choiceIndex = request.choiceIndex();
         if (choiceIndex < 0 || choiceIndex >= event.choices().size()) {
             throw new IllegalArgumentException("无效的事件选项。");
@@ -299,6 +309,9 @@ public class GameService {
             transientLogs.add("你的肉身或寿元无法支撑下一步，修仙路在此断绝。");
         } else if (boss) {
             transientLogs.add("你完成了渡劫，新的结局正在因果簿上显现。");
+        }
+        if (!"RUNNING".equals(run.getStatus())) {
+            settlementService.ensure(run);
         }
         return toView(run, transientLogs);
     }
@@ -584,8 +597,8 @@ public class GameService {
     }
 
     private GameRunView toView(GameRunEntity run, List<String> transientLogs) {
-        EventCatalog.EventDefinition event = EventCatalog.get(run.getCurrentEventId());
-        EventCatalog.EventMeta meta = EventCatalog.meta(event.id());
+        EventCatalog.EventDefinition event = eventConfigService.get(run.getCurrentEventId());
+        EventCatalog.EventMeta meta = eventConfigService.meta(event.id());
         List<ChoiceView> choices = new ArrayList<>();
         for (int i = 0; i < event.choices().size(); i++) {
             EventCatalog.ChoiceDefinition choice = event.choices().get(i);
@@ -638,18 +651,22 @@ public class GameService {
                 ? null
                 : buildService.toRemovalView("SPECIAL_EVENT", build);
         CombatView combat = combatService.toView(combatService.active(run.getId()));
+        EventConfigService.ConfigStatus configStatus = eventConfigService.status();
+        SettlementView settlement = settlementService.toView(settlementService.ensure(run));
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
                 run.getHealth(), run.getSpirit(), run.getLifespan(), run.getKarma(), run.getSpiritStones(),
                 run.getTurn(), run.getStatus(), run.getCurrentNodeId(), run.getCurrentFloor(),
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
-                map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, combat, logs
+                map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, combat,
+                new ConfigStatusView(configStatus.activeEvents(), configStatus.activeEndings(),
+                        configStatus.maxVersion(), configStatus.valid()), settlement, logs
         );
     }
 
     private EndingView toEndingView(String endingId) {
-        EventCatalog.EndingDefinition ending = EventCatalog.ending(endingId);
+        EventCatalog.EndingDefinition ending = eventConfigService.ending(endingId);
         return new EndingView(ending.id(), ending.title(), ending.description());
     }
 

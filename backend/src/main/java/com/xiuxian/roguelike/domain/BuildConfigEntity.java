@@ -68,6 +68,9 @@ public abstract class BuildConfigEntity {
     @Column(nullable = false)
     private boolean enabled;
 
+    @Column(name = "config_version", nullable = false)
+    private int configVersion = 1;
+
     protected BuildConfigEntity() {
     }
 
@@ -120,4 +123,5 @@ public abstract class BuildConfigEntity {
     public int getEliteWeight() { return eliteWeight; }
     public int getTreasureWeight() { return treasureWeight; }
     public boolean isEnabled() { return enabled; }
+    public int getConfigVersion() { return configVersion; }
 }

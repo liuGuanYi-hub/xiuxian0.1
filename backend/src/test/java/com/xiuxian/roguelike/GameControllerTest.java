@@ -75,6 +75,30 @@ class GameControllerTest {
     }
 
     @Test
+    void configCenterLoadsDatabaseEventsAndSupportsVersionedImport() throws Exception {
+        JsonNode configs = objectMapper.readTree(mockMvc.perform(get("/api/admin/config/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.activeEvents").value(28))
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(34, configs.get("configs").size());
+
+        mockMvc.perform(post("/api/admin/config/events/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"operator\":\"test\",\"configs\":[{\"configType\":\"EVENT\",\"eventId\":\"test_disabled_v06\",\"title\":\"测试配置\",\"description\":\"用于验证配置中心导入和版本字段。\",\"rarity\":\"普通\",\"repeatable\":false,\"version\":2,\"enabled\":false,\"choices\":[],\"nextEventIds\":[],\"nodeWeights\":{}}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.importedConfigs").value(1))
+                .andExpect(jsonPath("$.activeEvents").value(28));
+
+        mockMvc.perform(get("/api/admin/config/events?includeDisabled=true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configs.length()").value(35));
+        mockMvc.perform(get("/api/admin/config/logs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].action").exists());
+    }
+
+    @Test
     void playerCanEnterChooseAndRestoreHistory() throws Exception {
         JsonNode startedRun = objectMapper.readTree(startRun());
         String runId = startedRun.get("id").asText();
@@ -321,6 +345,19 @@ class GameControllerTest {
         assertTrue("ASCENDED".equals(current.get("status").asText())
                         || "DEAD".equals(current.get("status").asText()),
                 "抵达 Boss 后应该进入结局或死亡状态");
+        assertTrue(current.get("settlement").isObject(), "终局应该生成结算快照");
+        assertTrue(current.get("settlement").get("score").asInt() > 0, "结算积分应该大于 0");
+
+        JsonNode restored = objectMapper.readTree(mockMvc.perform(get("/api/game/runs/{id}", runId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(current.get("settlement").get("score").asInt(),
+                restored.get("settlement").get("score").asInt());
+
+        JsonNode leaderboard = objectMapper.readTree(mockMvc.perform(get("/api/leaderboard?limit=10"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertTrue(containsRun(leaderboard, runId), "排行榜应该包含本局结算快照");
     }
 
     private String startRun() throws Exception {
@@ -591,5 +628,12 @@ class GameControllerTest {
             if (type.equals(node.get("type").asText())) count++;
         }
         return count;
+    }
+
+    private boolean containsRun(JsonNode leaderboard, String runId) {
+        for (JsonNode entry : leaderboard) {
+            if (runId.equals(entry.get("runId").asText())) return true;
+        }
+        return false;
     }
 }

@@ -18,9 +18,11 @@ public class RunMapService {
     private static final int MIDDLE_NODES_PER_FLOOR = 3;
 
     private final RunMapNodeRepository nodeRepository;
+    private final EventConfigService eventConfigService;
 
-    public RunMapService(RunMapNodeRepository nodeRepository) {
+    public RunMapService(RunMapNodeRepository nodeRepository, EventConfigService eventConfigService) {
         this.nodeRepository = nodeRepository;
+        this.eventConfigService = eventConfigService;
     }
 
     public List<RunMapNodeEntity> generate(GameRunEntity run) {
@@ -32,8 +34,8 @@ public class RunMapService {
             List<RunMapNodeEntity> currentFloor = new ArrayList<>();
             for (int position = 0; position < count; position++) {
                 String type = typeFor(floor, position, random);
-                String contentId = EventCatalog.pickNodeContent(type, random);
-                EventCatalog.EventMeta meta = EventCatalog.meta(contentId);
+                String contentId = eventConfigService.pickNodeContent(type, random);
+                EventCatalog.EventMeta meta = eventConfigService.meta(contentId);
                 String label = labelFor(type, contentId);
                 String status = floor == 0 ? "AVAILABLE" : "LOCKED";
                 currentFloor.add(new RunMapNodeEntity(

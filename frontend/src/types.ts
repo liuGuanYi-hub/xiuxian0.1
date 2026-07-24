@@ -123,6 +123,46 @@ export type CombatView = {
   recentLog: string[]
 }
 
+export type ConfigStatus = {
+  activeEvents: number
+  activeEndings: number
+  maxVersion: number
+  valid: boolean
+}
+
+export type Settlement = {
+  runId: string
+  playerName: string
+  origin: string
+  status: 'DEAD' | 'ASCENDED'
+  endingId: string
+  endingTitle: string
+  floorReached: number
+  turn: number
+  health: number
+  spirit: number
+  lifespan: number
+  karma: number
+  spiritStones: number
+  activeCards: number
+  eliteCount: number
+  score: number
+  settledAt: string
+}
+
+export type LeaderboardEntry = {
+  rank: number
+  runId: string
+  playerName: string
+  origin: string
+  status: 'DEAD' | 'ASCENDED'
+  endingTitle: string
+  floorReached: number
+  turn: number
+  score: number
+  settledAt: string
+}
+
 export type GameRun = {
   id: string
   playerName: string
@@ -147,5 +187,7 @@ export type GameRun = {
   shop: ShopState | null
   removal: RemovalState | null
   combat: CombatView | null
+  configStatus: ConfigStatus
+  settlement: Settlement | null
   logs: string[]
 }

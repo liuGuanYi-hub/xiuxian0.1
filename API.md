@@ -68,6 +68,56 @@
 ## 配置与迁移
 
 - 初始 25 张卡牌位于 `backend/src/main/resources/card-config.json`，其中新增 8 张战斗专属卡牌。
+- 初始事件位于 `backend/src/main/resources/event-config.json`，包含 28 个事件、6 个结局和 78 个事件选项。
 - 应用启动时只补充配置表缺失记录，不覆盖已有配置。
-- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260723_v04_build_extension.sql` 和 `database/migrations/20260723_v05_combat_depth.sql`。
+- `event_config` 保存事件/结局正文、事件选项、后继事件、节点权重、稀有度、版本号和启用状态；游戏路线图和事件展示运行时从数据库缓存读取。
+- `skill_config`、`item_config`、`talisman_config` 均带 `config_version` 和 `enabled` 字段；配置初始化只补充缺失卡牌。
+- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260723_v04_build_extension.sql`、`database/migrations/20260723_v05_combat_depth.sql`、`database/migrations/20260724_v06_config_center.sql` 和 `database/migrations/20260724_v06_leaderboard.sql`。
 - `run_build_item` 保存领取/购买时的卡牌快照，后续修改配置不会改变历史存档。
+
+## 结算与排行榜
+
+- 游戏进入 `DEAD` 或 `ASCENDED` 时，服务端在 `run_settlement` 生成一份唯一结算快照；重复恢复存档不会重复生成。
+- 结算积分由服务端计算：层数、回合、气血、灵力、寿元、正因果、灵石、有效卡牌、精英挑战和飞升状态都会影响分数。
+- `GameRunView.settlement` 在终局返回结算快照，进行中的旅程为 `null`。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/leaderboard?limit=10` | 查询积分最高的已结算旅程，服务端将 limit 限制在 1~50 |
+
+`SettlementView` 包含：结局、抵达层数、回合、终局属性、有效卡牌数、精英挑战数、积分和结算时间。排行榜只读取快照，不重新计算历史积分。
+
+## 配置中心接口
+
+当前配置管理接口暂未接入账号鉴权，适用于本地开发和内网配置工具；生产环境接入 JWT 后再开放给管理员。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/admin/config/events?includeDisabled=false` | 查询事件和结局配置，默认只返回启用项 |
+| POST | `/admin/config/events/import` | 导入配置并执行全量引用校验，失败时不写入配置 |
+| POST | `/admin/config/validate?operator=admin` | 校验当前启用配置并记录 `VALIDATE` 日志 |
+| POST | `/admin/config/reload?operator=admin` | 从数据库重建事件缓存并记录 `RELOAD` 日志 |
+| GET | `/admin/config/logs` | 查询最近 50 条初始化、导入、校验和重载日志 |
+
+导入请求示例：
+
+```json
+{
+  "operator": "admin",
+  "configs": [
+    {
+      "configType": "EVENT",
+      "eventId": "new_event",
+      "title": "新事件",
+      "description": "事件描述",
+      "rarity": "稀有",
+      "repeatable": false,
+      "version": 2,
+      "enabled": true,
+      "choices": [],
+      "nextEventIds": [],
+      "nodeWeights": {"EVENT": 10}
+    }
+  ]
+}
+```
