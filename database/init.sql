@@ -100,6 +100,16 @@ CREATE TABLE IF NOT EXISTS unlock_record (
   KEY idx_unlock_record_user (user_id, unlocked_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS achievement_record (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id VARCHAR(36) NOT NULL,
+  achievement_id VARCHAR(60) NOT NULL,
+  trigger_run_id VARCHAR(36) NULL,
+  awarded_at DATETIME(6) NOT NULL,
+  UNIQUE KEY uk_achievement_record_user_achievement (user_id, achievement_id),
+  KEY idx_achievement_record_user (user_id, awarded_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS game_run (
   id VARCHAR(36) PRIMARY KEY,
   player_name VARCHAR(32) NOT NULL,

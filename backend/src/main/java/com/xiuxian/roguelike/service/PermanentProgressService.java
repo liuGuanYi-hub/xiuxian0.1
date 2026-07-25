@@ -1,6 +1,7 @@
 package com.xiuxian.roguelike.service;
 
 import com.xiuxian.roguelike.api.ProgressDtos.AccountProgressView;
+import com.xiuxian.roguelike.api.ProgressDtos.AchievementView;
 import com.xiuxian.roguelike.api.ProgressDtos.SettlementHistoryView;
 import com.xiuxian.roguelike.api.ProgressDtos.UnlockView;
 import com.xiuxian.roguelike.auth.AuthContext;
@@ -28,17 +29,20 @@ public class PermanentProgressService {
     private final UnlockRecordRepository unlockRecordRepository;
     private final GameRunRepository gameRunRepository;
     private final RunSettlementRepository settlementRepository;
+    private final AchievementService achievementService;
     private final AuthContext authContext;
 
     public PermanentProgressService(UserAccountRepository userAccountRepository,
                                     UnlockRecordRepository unlockRecordRepository,
                                     GameRunRepository gameRunRepository,
                                     RunSettlementRepository settlementRepository,
+                                    AchievementService achievementService,
                                     AuthContext authContext) {
         this.userAccountRepository = userAccountRepository;
         this.unlockRecordRepository = unlockRecordRepository;
         this.gameRunRepository = gameRunRepository;
         this.settlementRepository = settlementRepository;
+        this.achievementService = achievementService;
         this.authContext = authContext;
     }
 
@@ -101,9 +105,18 @@ public class PermanentProgressService {
                         row.getStatus(), row.getEndingTitle(), row.getScore(), row.getCausalityEarned(),
                         row.getSettledAt().toString()))
                 .toList();
+        List<AchievementView> achievements = achievementService.views(userId);
+        int highestFloor = settlementRepository.findTopByUserIdOrderByFloorReachedDesc(userId)
+                .map(row -> row.getFloorReached()).orElse(0);
+        int bestScore = settlementRepository.findTopByUserIdOrderByScoreDesc(userId)
+                .map(row -> row.getScore()).orElse(0);
+        long ascendedRuns = settlementRepository.countByUserIdAndStatus(userId, "ASCENDED");
+        long deadRuns = settlementRepository.countByUserIdAndStatus(userId, "DEAD");
+        int achievementCount = (int) achievements.stream().filter(AchievementView::unlocked).count();
         return new AccountProgressView(account.getCausalityPoints(), account.getTotalCausalityEarned(),
                 account.getTotalCausalitySpent(), gameRunRepository.countByUserId(userId),
-                settlementRepository.countByUserId(userId), unlocks, history);
+                settlementRepository.countByUserId(userId), ascendedRuns, deadRuns, highestFloor, bestScore,
+                achievementCount, unlocks, achievements, history);
     }
 
     private UserAccountEntity account(String userId) {
@@ -130,7 +143,15 @@ public class PermanentProgressService {
                 "+2 初始因果", 0, 0, 0, 2, 0));
         definitions.put("wealth_memory", new UnlockDefinition("wealth_memory", "旧日宝藏", "记得曾经藏下的一笔灵石。", 30,
                 "+20 初始灵石", 0, 0, 0, 0, 20));
-        return Map.copyOf(definitions);
+        definitions.put("sword_bone", new UnlockDefinition("sword_bone", "剑骨初鸣", "历经数次轮回后，剑意沉入骨中。", 30,
+                "+6 初始气血、+2 初始灵力", 6, 2, 0, 0, 0));
+        definitions.put("alchemy_ember", new UnlockDefinition("alchemy_ember", "丹火余温", "丹炉熄灭之后，仍有一缕火种守护神魂。", 32,
+                "+4 初始灵力、+2 初始寿元", 0, 4, 2, 0, 0));
+        definitions.put("flesh_heart", new UnlockDefinition("flesh_heart", "不灭战躯", "以百战淬体，肉身在新局醒来时更难被击溃。", 35,
+                "+12 初始气血", 12, 0, 0, 0, 0));
+        definitions.put("karma_tide", new UnlockDefinition("karma_tide", "因果潮汐", "观尽众生来去，开局便携带一缕可转化的因果。", 40,
+                "+3 初始因果", 0, 0, 0, 3, 0));
+        return java.util.Collections.unmodifiableMap(definitions);
     }
 
     public record StartingBonuses(int health, int spirit, int lifespan, int karma, int spiritStones) {

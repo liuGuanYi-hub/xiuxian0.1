@@ -121,7 +121,29 @@
 | `karma_lens` | 因果观 | 25 | 初始因果 +2 |
 | `wealth_memory` | 旧日宝藏 | 30 | 初始灵石 +20 |
 
+V0.8 新增永久解锁：
+
+| ID | 名称 | 费用 | 后续新局效果 |
+| --- | --- | ---: | --- |
+| `sword_bone` | 剑骨初鸣 | 30 | 初始气血 +6、初始灵力 +2 |
+| `alchemy_ember` | 丹火余温 | 32 | 初始灵力 +4、初始寿元 +2 |
+| `flesh_heart` | 不灭战躯 | 35 | 初始气血 +12 |
+| `karma_tide` | 因果潮汐 | 40 | 初始因果 +3 |
+
 死亡结算基础发放 3 点因果，飞升结算基础发放 20 点；抵达层数、精英挑战和正因果会提高发放量。发放结果写入 `run_settlement.causality_earned`，以结算快照保证幂等。永久进度按账号共享，角色之间不会互相覆盖。
+
+## V0.8 成就与账号统计
+
+`GET /account/progress` 在原有因果、永久解锁和结算历史之外返回：
+
+- `totalRuns`、`completedRuns`：账号创建存档数和终局结算数
+- `ascendedRuns`、`deadRuns`：飞升和陨落结算数
+- `highestFloor`、`bestScore`：结算快照中的最高抵达层数和最高积分
+- `achievementCount`、`achievements`：已解锁数量和完整成就目录
+
+当前成就包括：踏出第一步、因果初结、劫后余生、白日飞升、深入天关、猎尽强敌、百炼成器、因果富足。成就记录写入 `achievement_record`，账号与成就组成唯一键，重复恢复不会重复达成。
+
+迁移文件：`database/migrations/20260725_v08_achievements.sql`。
 
 ## 配置中心接口
 

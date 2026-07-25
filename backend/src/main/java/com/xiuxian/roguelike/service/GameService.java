@@ -62,6 +62,7 @@ public class GameService {
     private final SettlementService settlementService;
     private final AccountService accountService;
     private final PermanentProgressService permanentProgressService;
+    private final AchievementService achievementService;
     private final AuthContext authContext;
     private final boolean authRequired;
 
@@ -71,7 +72,8 @@ public class GameService {
                        RunMapService runMapService, BuildService buildService, BuildConfigService configService,
                        EventConfigService eventConfigService, CombatService combatService,
                        SettlementService settlementService, AccountService accountService,
-                       PermanentProgressService permanentProgressService, AuthContext authContext,
+                       PermanentProgressService permanentProgressService, AchievementService achievementService,
+                       AuthContext authContext,
                        @Value("${app.auth.required:true}") boolean authRequired) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
@@ -87,6 +89,7 @@ public class GameService {
         this.settlementService = settlementService;
         this.accountService = accountService;
         this.permanentProgressService = permanentProgressService;
+        this.achievementService = achievementService;
         this.authContext = authContext;
         this.authRequired = authRequired;
     }
@@ -113,6 +116,7 @@ public class GameService {
         run.applyPermanentBonuses(bonuses.health(), bonuses.spirit(), bonuses.lifespan(),
                 bonuses.karma(), bonuses.spiritStones());
         gameRunRepository.save(run);
+        achievementService.awardFirstRun(userId, run.getId());
         buildService.initialize(run);
         runMapService.generate(run);
         List<String> logs = bonuses.equals(PermanentProgressService.StartingBonuses.ZERO)

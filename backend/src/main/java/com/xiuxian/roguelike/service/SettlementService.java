@@ -21,15 +21,18 @@ public class SettlementService {
     private final BuildService buildService;
     private final EventConfigService eventConfigService;
     private final PermanentProgressService permanentProgressService;
+    private final AchievementService achievementService;
 
     public SettlementService(RunSettlementRepository settlementRepository, RunMapService runMapService,
                              BuildService buildService, EventConfigService eventConfigService,
-                             PermanentProgressService permanentProgressService) {
+                             PermanentProgressService permanentProgressService,
+                             AchievementService achievementService) {
         this.settlementRepository = settlementRepository;
         this.runMapService = runMapService;
         this.buildService = buildService;
         this.eventConfigService = eventConfigService;
         this.permanentProgressService = permanentProgressService;
+        this.achievementService = achievementService;
     }
 
     @Transactional
@@ -54,6 +57,7 @@ public class SettlementService {
                     score, causalityEarned, run.getSeed()
             ));
             permanentProgressService.awardForSettlement(run, causalityEarned);
+            achievementService.evaluateSettlement(run, settlement);
             return settlement;
         });
     }
