@@ -17,4 +17,10 @@ public interface RunSettlementRepository extends JpaRepository<RunSettlementEnti
     List<RunSettlementEntity> findByUserIdOrderBySettledAtDesc(String userId, Pageable pageable);
 
     long countByUserId(String userId);
+
+    long countByUserIdAndStatus(String userId, String status);
+
+    Optional<RunSettlementEntity> findTopByUserIdOrderByFloorReachedDesc(String userId);
+
+    Optional<RunSettlementEntity> findTopByUserIdOrderByScoreDesc(String userId);
 }

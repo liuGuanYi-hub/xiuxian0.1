@@ -214,13 +214,28 @@ export type SettlementHistory = {
   settledAt: string
 }
 
+export type Achievement = {
+  id: string
+  name: string
+  description: string
+  conditionText: string
+  unlocked: boolean
+  awardedAt: string | null
+}
+
 export type AccountProgress = {
   causalityPoints: number
   totalCausalityEarned: number
   totalCausalitySpent: number
   totalRuns: number
   completedRuns: number
+  ascendedRuns: number
+  deadRuns: number
+  highestFloor: number
+  bestScore: number
+  achievementCount: number
   unlocks: PermanentUnlock[]
+  achievements: Achievement[]
   recentSettlements: SettlementHistory[]
 }
 

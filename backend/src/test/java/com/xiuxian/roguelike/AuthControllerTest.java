@@ -117,6 +117,7 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
         String runId = started.get("id").asText();
+        assertEquals(1, started.get("accountProgress").get("achievementCount").asInt());
         GameRunEntity run = gameRunRepository.findById(runId).orElseThrow();
         run.applyChoice(0, 0, 0, 0, "awaiting_node", "炼气二层", "DEAD", "fallen_path");
         gameRunRepository.save(run);
@@ -128,6 +129,14 @@ class AuthControllerTest {
                 .andReturn().getResponse().getContentAsString());
         assertTrue(progress.get("causalityPoints").asInt() > 0);
         assertEquals(1, progress.get("completedRuns").asInt());
+        assertEquals(0, progress.get("ascendedRuns").asInt());
+        assertEquals(1, progress.get("deadRuns").asInt());
+        assertEquals(1, progress.get("highestFloor").asInt());
+        assertTrue(progress.get("bestScore").asInt() > 0);
+        assertTrue(progress.get("achievementCount").asInt() >= 3);
+        assertTrue(achievementUnlocked(progress, "first_step"));
+        assertTrue(achievementUnlocked(progress, "first_settlement"));
+        assertTrue(achievementUnlocked(progress, "fallen_once"));
         assertTrue(progress.get("recentSettlements").size() >= 1);
 
         mockMvc.perform(get("/api/game/runs/{id}", runId)
@@ -172,5 +181,14 @@ class AuthControllerTest {
                                 + characterName + "\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
+    }
+
+    private boolean achievementUnlocked(JsonNode progress, String achievementId) {
+        for (JsonNode achievement : progress.get("achievements")) {
+            if (achievementId.equals(achievement.get("id").asText())) {
+                return achievement.get("unlocked").asBoolean();
+            }
+        }
+        return false;
     }
 }

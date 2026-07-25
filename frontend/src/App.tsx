@@ -637,6 +637,12 @@ function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgr
         <div><strong>{progress.causalityPoints}</strong><small>可用因果点</small></div>
         <div><strong>{progress.totalCausalityEarned}</strong><small>累计获得</small></div>
         <div><strong>{progress.completedRuns}</strong><small>完成轮回</small></div>
+        <div><strong>{progress.totalRuns}</strong><small>创建存档</small></div>
+        <div><strong>{progress.highestFloor}</strong><small>最高抵达层</small></div>
+        <div><strong>{progress.bestScore}</strong><small>最高轮回分</small></div>
+        <div><strong>{progress.ascendedRuns}</strong><small>飞升轮回</small></div>
+        <div><strong>{progress.deadRuns}</strong><small>道途轮回</small></div>
+        <div><strong>{progress.achievementCount}</strong><small>已解锁成就</small></div>
       </div>
       <div className="unlock-list">
         {progress.unlocks.map((unlock) => (
@@ -646,6 +652,18 @@ function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgr
           </div>
         ))}
       </div>
+      <div className="achievement-list">
+        <div className="stats-block-title"><Trophy size={14} />账号成就 <small>{progress.achievementCount}/{progress.achievements.length} 已解锁</small></div>
+        <div className="achievement-grid">
+          {progress.achievements.map((achievement) => (
+            <article className={`achievement-row ${achievement.unlocked ? 'unlocked' : ''}`} key={achievement.id}>
+              <div className="achievement-icon"><Trophy size={14} /></div>
+              <div><strong>{achievement.name}</strong><small>{achievement.description}</small><em>{achievement.conditionText}</em></div>
+              <span>{achievement.unlocked ? '已达成' : '未达成'}</span>
+            </article>
+          ))}
+        </div>
+      </div>
       {progress.recentSettlements.length > 0 && <div className="settlement-history"><div className="stats-block-title"><Trophy size={14} />最近结算</div>{progress.recentSettlements.slice(0, 3).map((settlement) => <div className="history-row" key={settlement.runId}><span>{settlement.playerName} · {settlement.endingTitle}</span><b>+{settlement.causalityEarned}</b></div>)}</div>}
     </section>
   )
@@ -653,7 +671,7 @@ function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgr
 
 function ProgressSummary({ progress }: { progress: AccountProgress }) {
   const unlocked = progress.unlocks.filter((item) => item.unlocked).length
-  return <section className="progress-summary"><span><Sparkles size={14} />账号因果 {progress.causalityPoints}</span><span>永久解锁 {unlocked}/{progress.unlocks.length}</span><span>完成轮回 {progress.completedRuns}</span></section>
+  return <section className="progress-summary"><span><Sparkles size={14} />账号因果 {progress.causalityPoints}</span><span>永久解锁 {unlocked}/{progress.unlocks.length}</span><span>完成轮回 {progress.completedRuns}</span><span><Trophy size={14} />成就 {progress.achievementCount}/{progress.achievements.length}</span><span>最高层数 {progress.highestFloor}</span></section>
 }
 
 function RecentRunsPanel({ runs, loading, onRestore }: { runs: GameRunSummary[]; loading: boolean; onRestore: (id: string) => void }) {
