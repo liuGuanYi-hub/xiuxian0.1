@@ -67,6 +67,56 @@ CREATE TABLE IF NOT EXISTS config_operation_log (
   KEY idx_config_log_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_account (
+  id VARCHAR(36) PRIMARY KEY,
+  username VARCHAR(40) NOT NULL UNIQUE,
+  password_hash VARCHAR(300) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  KEY idx_user_account_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_character (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id VARCHAR(36) NOT NULL,
+  name VARCHAR(32) NOT NULL,
+  origin VARCHAR(32) NOT NULL,
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  KEY idx_player_character_user (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS game_run (
+  id VARCHAR(36) PRIMARY KEY,
+  player_name VARCHAR(32) NOT NULL,
+  user_id VARCHAR(36) NULL,
+  character_id VARCHAR(36) NULL,
+  origin VARCHAR(32) NOT NULL,
+  realm VARCHAR(32) NOT NULL,
+  health INT NOT NULL,
+  spirit INT NOT NULL,
+  lifespan INT NOT NULL,
+  karma INT NOT NULL,
+  spirit_stones INT NOT NULL,
+  seed BIGINT NOT NULL,
+  turn INT NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  current_event_id VARCHAR(80) NOT NULL,
+  current_node_id VARCHAR(36) NOT NULL,
+  current_floor INT NOT NULL,
+  ending_id VARCHAR(40) NULL,
+  pending_reward_node_id VARCHAR(36) NULL,
+  pending_upgrade_node_id VARCHAR(36) NULL,
+  pending_shop_node_id VARCHAR(36) NULL,
+  pending_removal_node_id VARCHAR(36) NULL,
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  version BIGINT NOT NULL,
+  KEY idx_game_run_user_updated (user_id, updated_at),
+  KEY idx_game_run_character (character_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS run_settlement (
   id VARCHAR(36) PRIMARY KEY,
   run_id VARCHAR(36) NOT NULL UNIQUE,

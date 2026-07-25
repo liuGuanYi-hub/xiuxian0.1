@@ -12,3 +12,7 @@ spring:
 app:
   admin:
     token: dev-admin-token
+  auth:
+    required: false
+    jwt-secret: test-jwt-secret-for-h2-only-please-change
+    jwt-expiration-ms: 86400000

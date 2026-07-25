@@ -19,6 +19,12 @@ public class GameRunEntity {
     @Column(nullable = false, length = 32)
     private String playerName;
 
+    @Column(name = "user_id", length = 36)
+    private String userId;
+
+    @Column(name = "character_id", length = 36)
+    private String characterId;
+
     @Column(nullable = false, length = 32)
     private String origin;
 
@@ -86,7 +92,14 @@ public class GameRunEntity {
     }
 
     public GameRunEntity(String id, String playerName, String origin, long seed, String currentEventId) {
+        this(id, null, null, playerName, origin, seed, currentEventId);
+    }
+
+    public GameRunEntity(String id, String userId, String characterId, String playerName,
+                         String origin, long seed, String currentEventId) {
         this.id = id;
+        this.userId = userId;
+        this.characterId = characterId;
         this.playerName = playerName;
         this.origin = origin;
         this.realm = "炼气一层";
@@ -112,6 +125,8 @@ public class GameRunEntity {
 
     public String getId() { return id; }
     public String getPlayerName() { return playerName; }
+    public String getUserId() { return userId; }
+    public String getCharacterId() { return characterId; }
     public String getOrigin() { return origin; }
     public String getRealm() { return realm; }
     public int getHealth() { return health; }
@@ -126,6 +141,7 @@ public class GameRunEntity {
     public String getCurrentNodeId() { return currentNodeId; }
     public int getCurrentFloor() { return currentFloor; }
     public String getEndingId() { return endingId; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
     public String getPendingRewardNodeId() { return pendingRewardNodeId; }
     public String getPendingUpgradeNodeId() { return pendingUpgradeNodeId; }
     public String getPendingShopNodeId() { return pendingShopNodeId; }

@@ -163,6 +163,37 @@ export type LeaderboardEntry = {
   settledAt: string
 }
 
+export type Character = {
+  id: string
+  name: string
+  origin: string
+  createdAt: string
+}
+
+export type Account = {
+  id: string
+  username: string
+  characters: Character[]
+}
+
+export type AuthResponse = {
+  token: string
+  tokenType: string
+  expiresInMs: number
+  account: Account
+}
+
+export type GameRunSummary = {
+  id: string
+  characterId: string | null
+  playerName: string
+  origin: string
+  status: 'RUNNING' | 'DEAD' | 'ASCENDED'
+  currentFloor: number
+  turn: number
+  updatedAt: string
+}
+
 export type GameRun = {
   id: string
   playerName: string

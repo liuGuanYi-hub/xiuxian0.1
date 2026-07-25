@@ -1,5 +1,6 @@
 package com.xiuxian.roguelike.api;
 
+import com.xiuxian.roguelike.service.AccountService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,11 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(exception.getMessage()));
     }
 
+    @ExceptionHandler(AccountService.InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleCredentials(AccountService.InvalidCredentialsException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(exception.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
         String message = exception.getBindingResult().getFieldErrors().stream()
@@ -32,4 +38,3 @@ public class ApiExceptionHandler {
     public record ApiError(String message) {
     }
 }
-

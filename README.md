@@ -35,6 +35,8 @@
 - V0.6 卡牌统一导入接口：功法、法宝、符箓使用同一套 JSON 字段导入，并自动重建缓存、校验和记录操作日志
 - 配置中心管理员鉴权：`/api/admin/**` 支持 `X-Admin-Token` 或 `Authorization: Bearer`，生产环境使用 `ADMIN_CONFIG_TOKEN`
 - V0.6 终局自动生成不可变结算快照，按进度、属性、精英和构筑计算积分，并提供天道榜
+- V0.3 账号体系：注册/登录使用 PBKDF2 密码哈希和 JWT，角色与游戏存档按账号隔离
+- V0.3 前端支持登录态恢复、角色切换/创建、当前账号最近存档列表和授权恢复
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
 - React 前端展示路线图、节点连线、当前事件和修仙日志
@@ -93,6 +95,12 @@ npm run dev
 | 方法 | 路径 | 作用 |
 | --- | --- | --- |
 | POST | `/api/game/runs` | 创建一局游戏并生成路线图 |
+| POST | `/api/auth/register` | 注册账号并返回 JWT 与初始角色 |
+| POST | `/api/auth/login` | 登录账号并返回 JWT |
+| POST | `/api/auth/logout` | 无状态登出，由前端清除 JWT |
+| GET | `/api/players/me` | 查询当前账号及角色列表 |
+| POST | `/api/players` | 创建当前账号下的新角色 |
+| GET | `/api/game/runs` | 查询当前账号最近存档 |
 | GET | `/api/game/runs/{id}` | 查询游戏存档 |
 | POST | `/api/game/runs/{id}/nodes/{nodeId}/enter` | 进入当前可达节点 |
 | POST | `/api/game/runs/{id}/choices` | 提交事件选择并解锁下一跳 |
@@ -116,7 +124,9 @@ npm run dev
 
 完整请求/响应字段说明见：[API.md](./API.md)；V0.4 逐项验收见：[V0.4_ACCEPTANCE.md](./V0.4_ACCEPTANCE.md)。
 
-配置中心接口需要管理员令牌。本地开发默认使用 `dev-admin-token`；部署时请设置 `ADMIN_CONFIG_TOKEN`，不要使用默认值。
+游戏接口默认要求 `Authorization: Bearer <JWT>`。JWT 配置项为 `JWT_SECRET`（至少 32 个字符）和 `JWT_EXPIRATION_MS`；本地开发可使用默认值，部署时应覆盖。
+
+配置中心接口需要独立的管理员令牌。本地开发默认使用 `dev-admin-token`；部署时请设置 `ADMIN_CONFIG_TOKEN`，不要使用默认值。管理员令牌不等同于玩家 JWT。
 
 ## 默认数据库配置
 

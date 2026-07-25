@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +15,14 @@ public final class GameDtos {
 
     public record StartRunRequest(
             @NotBlank(message = "道号不能为空") String playerName,
-            @NotBlank(message = "出身不能为空") String origin
+            @NotBlank(message = "出身不能为空") String origin,
+            String characterId
     ) {
+    }
+
+    public record GameRunSummaryView(String id, String characterId, String playerName,
+                                     String origin, String status, int currentFloor,
+                                     int turn, LocalDateTime updatedAt) {
     }
 
     public record ChoiceRequest(

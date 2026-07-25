@@ -11,6 +11,7 @@ import com.xiuxian.roguelike.api.GameDtos.BuildStatsView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
 import com.xiuxian.roguelike.api.GameDtos.EventView;
 import com.xiuxian.roguelike.api.GameDtos.GameRunView;
+import com.xiuxian.roguelike.api.GameDtos.GameRunSummaryView;
 import com.xiuxian.roguelike.api.GameDtos.MapNodeView;
 import com.xiuxian.roguelike.api.GameDtos.RewardOfferView;
 import com.xiuxian.roguelike.api.GameDtos.RouteMapView;
@@ -19,6 +20,8 @@ import com.xiuxian.roguelike.api.GameDtos.ShopView;
 import com.xiuxian.roguelike.api.GameDtos.StartRunRequest;
 import com.xiuxian.roguelike.domain.BuildItemEntity;
 import com.xiuxian.roguelike.domain.GameRunEntity;
+import com.xiuxian.roguelike.domain.PlayerCharacterEntity;
+import com.xiuxian.roguelike.auth.AuthContext;
 import com.xiuxian.roguelike.domain.RewardOfferEntity;
 import com.xiuxian.roguelike.domain.RunEventEntity;
 import com.xiuxian.roguelike.domain.RunCombatEntity;
@@ -34,6 +37,7 @@ import com.xiuxian.roguelike.repository.RunShopRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,13 +59,17 @@ public class GameService {
     private final EventConfigService eventConfigService;
     private final CombatService combatService;
     private final SettlementService settlementService;
+    private final AccountService accountService;
+    private final AuthContext authContext;
+    private final boolean authRequired;
 
     public GameService(GameRunRepository gameRunRepository, RunEventRepository runEventRepository,
                        BuildItemRepository buildItemRepository, RewardOfferRepository rewardOfferRepository,
                        RunShopRepository runShopRepository, RunShopOfferRepository runShopOfferRepository,
                        RunMapService runMapService, BuildService buildService, BuildConfigService configService,
                        EventConfigService eventConfigService, CombatService combatService,
-                       SettlementService settlementService) {
+                       SettlementService settlementService, AccountService accountService,
+                       AuthContext authContext, @Value("${app.auth.required:true}") boolean authRequired) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
         this.buildItemRepository = buildItemRepository;
@@ -74,19 +82,29 @@ public class GameService {
         this.eventConfigService = eventConfigService;
         this.combatService = combatService;
         this.settlementService = settlementService;
+        this.accountService = accountService;
+        this.authContext = authContext;
+        this.authRequired = authRequired;
     }
 
     @Transactional
     public GameRunView start(StartRunRequest request) {
         String id = UUID.randomUUID().toString();
         long seed = System.nanoTime();
-        GameRunEntity run = new GameRunEntity(
-                id,
-                request.playerName().trim(),
-                request.origin().trim(),
-                seed,
-                "awaiting_node"
-        );
+        String playerName = request.playerName().trim();
+        String origin = request.origin().trim();
+        String userId = null;
+        String characterId = null;
+        if (authContext.current().isPresent()) {
+            PlayerCharacterEntity character = accountService.resolveCharacter(request.characterId());
+            userId = character.getUserId();
+            characterId = character.getId();
+            playerName = character.getName();
+            origin = character.getOrigin();
+        } else if (authRequired) {
+            throw new IllegalStateException("请先登录账号。");
+        }
+        GameRunEntity run = new GameRunEntity(id, userId, characterId, playerName, origin, seed, "awaiting_node");
         gameRunRepository.save(run);
         buildService.initialize(run);
         runMapService.generate(run);
@@ -97,6 +115,15 @@ public class GameService {
     public GameRunView get(String id) {
         GameRunEntity run = findRun(id);
         return toView(run, List.of("存档已恢复，当前在第 " + (run.getCurrentFloor() + 1) + " 层路线。"));
+    }
+
+    @Transactional
+    public List<GameRunSummaryView> recentRuns() {
+        String userId = authContext.requireUserId();
+        return gameRunRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream()
+                .map(run -> new GameRunSummaryView(run.getId(), run.getCharacterId(), run.getPlayerName(),
+                        run.getOrigin(), run.getStatus(), run.getCurrentFloor(), run.getTurn(), run.getUpdatedAt()))
+                .toList();
     }
 
     @Transactional
@@ -545,7 +572,10 @@ public class GameService {
     }
 
     private GameRunEntity findRun(String id) {
-        return gameRunRepository.findById(id)
+        var run = authContext.current()
+                .map(user -> gameRunRepository.findByIdAndUserId(id, user.userId()))
+                .orElseGet(() -> authRequired ? java.util.Optional.empty() : gameRunRepository.findById(id));
+        return run
                 .orElseThrow(() -> new EntityNotFoundException("找不到这局修仙旅程：" + id));
     }
 

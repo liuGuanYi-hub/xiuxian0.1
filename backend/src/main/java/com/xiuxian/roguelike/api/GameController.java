@@ -3,6 +3,7 @@ package com.xiuxian.roguelike.api;
 import com.xiuxian.roguelike.api.GameDtos.ChoiceRequest;
 import com.xiuxian.roguelike.api.GameDtos.CombatActionRequest;
 import com.xiuxian.roguelike.api.GameDtos.GameRunView;
+import com.xiuxian.roguelike.api.GameDtos.GameRunSummaryView;
 import com.xiuxian.roguelike.api.GameDtos.StartRunRequest;
 import com.xiuxian.roguelike.service.GameService;
 import jakarta.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/game/runs")
@@ -29,6 +32,11 @@ public class GameController {
     @ResponseStatus(HttpStatus.CREATED)
     public GameRunView start(@Valid @RequestBody StartRunRequest request) {
         return gameService.start(request);
+    }
+
+    @GetMapping
+    public List<GameRunSummaryView> recentRuns() {
+        return gameService.recentRuns();
     }
 
     @GetMapping("/{id}")

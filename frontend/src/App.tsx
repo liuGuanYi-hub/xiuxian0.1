@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowRight, Coins, Compass, Crosshair, Database, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, Shield, ShoppingBag, Sparkles, Trash2, TriangleAlert, Trophy } from 'lucide-react'
-import { buyShopOffer, chooseEvent, claimReward, combatAction, enterNode, getLeaderboard, leaveShop, refreshShop, removeShopCard, removeSpecialCard, restoreRun, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
-import type { BuildStats, CombatView, GameRun, LeaderboardEntry, MapNode, RemovalState, RewardOffer, ShopState } from './types'
+import { buyShopOffer, chooseEvent, claimReward, clearAuthToken, combatAction, createCharacter, enterNode, getCurrentAccount, getAuthToken, getLeaderboard, getRecentRuns, leaveShop, loginAccount, refreshShop, registerAccount, removeShopCard, removeSpecialCard, restoreRun, setAuthToken, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
+import type { Account, BuildStats, Character, CombatView, GameRun, GameRunSummary, LeaderboardEntry, MapNode, RemovalState, RewardOffer, ShopState } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -20,13 +20,60 @@ const nodeIcons: Record<string, string> = {
 }
 
 function App() {
+  const [account, setAccount] = useState<Account | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const [authUsername, setAuthUsername] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authCharacterName, setAuthCharacterName] = useState('')
+  const [selectedCharacterId, setSelectedCharacterId] = useState('')
+  const [newCharacterName, setNewCharacterName] = useState('')
+  const [newCharacterOrigin, setNewCharacterOrigin] = useState(origins[0].value)
   const [name, setName] = useState('')
   const [origin, setOrigin] = useState(origins[0].value)
   const [restoreId, setRestoreId] = useState('')
   const [run, setRun] = useState<GameRun | null>(null)
+  const [recentRuns, setRecentRuns] = useState<GameRunSummary[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      setAuthReady(true)
+      return
+    }
+    void getCurrentAccount().then((currentAccount) => {
+      setAccount(currentAccount)
+      const firstCharacter = currentAccount.characters[0]
+      if (firstCharacter) {
+        setSelectedCharacterId(firstCharacter.id)
+        setName(firstCharacter.name)
+        setOrigin(firstCharacter.origin)
+      }
+    }).catch(() => {
+      clearAuthToken()
+    }).finally(() => setAuthReady(true))
+  }, [])
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setAccount(null)
+      setRun(null)
+      setRecentRuns([])
+      setError('登录已过期，请重新登录。')
+    }
+    window.addEventListener('xiuxian-auth-expired', handleAuthExpired)
+    return () => window.removeEventListener('xiuxian-auth-expired', handleAuthExpired)
+  }, [])
+
+  useEffect(() => {
+    if (!account) {
+      setRecentRuns([])
+      return
+    }
+    void getRecentRuns().then(setRecentRuns).catch(() => undefined)
+  }, [account, run?.status, run?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -36,6 +83,68 @@ function App() {
     return () => { cancelled = true }
   }, [run?.status])
 
+  function selectCharacter(character: Character) {
+    setSelectedCharacterId(character.id)
+    setName(character.name)
+    setOrigin(character.origin)
+    setError('')
+  }
+
+  async function authenticate() {
+    if (!authUsername.trim() || authPassword.length < 8) {
+      setError('用户名不能为空，密码至少需要 8 位。')
+      return
+    }
+    if (authMode === 'register' && !authCharacterName.trim()) {
+      setError('注册时请先为角色取一个道号。')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const response = authMode === 'register'
+        ? await registerAccount(authUsername.trim(), authPassword, authCharacterName.trim())
+        : await loginAccount(authUsername.trim(), authPassword)
+      setAuthToken(response.token)
+      setAccount(response.account)
+      const firstCharacter = response.account.characters[0]
+      if (firstCharacter) selectCharacter(firstCharacter)
+      setAuthPassword('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '账号认证失败，请稍后重试。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function addCharacter() {
+    if (!newCharacterName.trim()) {
+      setError('请输入新角色道号。')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const updatedAccount = await createCharacter(newCharacterName.trim(), newCharacterOrigin)
+      setAccount(updatedAccount)
+      const createdCharacter = updatedAccount.characters[updatedAccount.characters.length - 1]
+      if (createdCharacter) selectCharacter(createdCharacter)
+      setNewCharacterName('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '创建角色失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function logout() {
+    clearAuthToken()
+    setAccount(null)
+    setRun(null)
+    setRecentRuns([])
+    setError('')
+  }
+
   async function begin() {
     if (!name.trim()) {
       setError('请先为自己取一个道号。')
@@ -44,7 +153,7 @@ function App() {
     setLoading(true)
     setError('')
     try {
-      setRun(await startRun(name, origin))
+      setRun(await startRun(name, origin, selectedCharacterId))
     } catch (err) {
       setError(err instanceof Error ? err.message : '无法连接道庭，请确认后端已经启动。')
     } finally {
@@ -216,18 +325,66 @@ function App() {
     setError('')
   }
 
+  if (!authReady) {
+    return <main className="page-shell landing-shell"><section className="landing-card auth-loading"><div className="eyebrow"><Sparkles size={15} /> 正在读取道庭身份</div><p className="intro">请稍候，正在恢复登录状态。</p></section></main>
+  }
+
+  if (!account) {
+    return (
+      <main className="page-shell landing-shell">
+        <div className="mist mist-one" />
+        <div className="mist mist-two" />
+        <AuthPanel
+          mode={authMode}
+          username={authUsername}
+          password={authPassword}
+          characterName={authCharacterName}
+          loading={loading}
+          error={error}
+          onModeChange={(mode) => { setAuthMode(mode); setError('') }}
+          onUsernameChange={setAuthUsername}
+          onPasswordChange={setAuthPassword}
+          onCharacterNameChange={setAuthCharacterName}
+          onSubmit={() => void authenticate()}
+        />
+        <div className="landing-card landing-leaderboard"><LeaderboardPanel entries={leaderboard} /></div>
+      </main>
+    )
+  }
+
   if (!run) {
     return (
       <main className="page-shell landing-shell">
         <div className="mist mist-one" />
         <div className="mist mist-two" />
         <section className="landing-card">
+          <div className="landing-account-bar"><span><Database size={14} /> {account.username}</span><button className="inline-button" onClick={logout} type="button">退出账号</button></div>
           <div className="eyebrow"><Sparkles size={15} /> 文字修仙 · 肉鸽原型</div>
           <h1>逆命仙途</h1>
           <p className="tagline">每一次选择，都是下一世的伏笔。</p>
           <p className="intro">在寿元耗尽之前，以有限的灵力和无法重来的因果，走出属于你的飞升之路。</p>
 
-          <label className="field-label" htmlFor="player-name">道号</label>
+          <div className="field-label">选择角色</div>
+          <div className="character-grid">
+            {account.characters.map((character) => (
+              <button className={`character-card ${selectedCharacterId === character.id ? 'selected' : ''}`} key={character.id} onClick={() => selectCharacter(character)} type="button">
+                <strong>{character.name}</strong><small>{character.origin}</small>
+              </button>
+            ))}
+          </div>
+
+          <details className="new-character-box">
+            <summary>创建新的角色分身</summary>
+            <div className="new-character-fields">
+              <input className="name-input" value={newCharacterName} onChange={(event) => setNewCharacterName(event.target.value)} placeholder="新的道号" maxLength={16} />
+              <select className="name-input" value={newCharacterOrigin} onChange={(event) => setNewCharacterOrigin(event.target.value)}>
+                {origins.map((item) => <option key={item.value} value={item.value}>{item.value}</option>)}
+              </select>
+              <button className="ghost-button" disabled={loading} onClick={() => void addCharacter()} type="button">创建角色</button>
+            </div>
+          </details>
+
+          <label className="field-label" htmlFor="player-name">当前道号</label>
           <input
             id="player-name"
             className="name-input"
@@ -274,6 +431,7 @@ function App() {
               </button>
             </div>
           </div>
+          {recentRuns.length > 0 && <RecentRunsPanel runs={recentRuns} loading={loading} onRestore={(id) => { setRestoreId(id); void restoreRun(id).then(setRun).catch((err) => setError(err instanceof Error ? err.message : '存档恢复失败。')) }} />}
           <LeaderboardPanel entries={leaderboard} />
           <p className="technical-note">React 前端 · Java Spring Boot · MySQL 存档</p>
         </section>
@@ -294,7 +452,7 @@ function App() {
           </div>
           <h1>{run.playerName}<span> · {run.realm}</span></h1>
         </div>
-        <button className="ghost-button" onClick={reset} type="button"><RotateCcw size={16} />重开</button>
+        <div className="game-header-actions"><span className="account-chip"><Database size={14} />{account.username}</span><button className="ghost-button" onClick={reset} type="button"><RotateCcw size={16} />重开</button><button className="ghost-button" onClick={logout} type="button">退出</button></div>
       </header>
 
       <section className="stats-grid">
@@ -404,6 +562,64 @@ function App() {
         {run.logs.length === 0 ? <p className="empty-log">你还没有做出选择。</p> : run.logs.map((log, index) => <p key={`${log}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span>{log}</p>)}
       </section>
     </main>
+  )
+}
+
+function AuthPanel({
+  mode, username, password, characterName, loading, error, onModeChange,
+  onUsernameChange, onPasswordChange, onCharacterNameChange, onSubmit,
+}: {
+  mode: 'login' | 'register'
+  username: string
+  password: string
+  characterName: string
+  loading: boolean
+  error: string
+  onModeChange: (mode: 'login' | 'register') => void
+  onUsernameChange: (value: string) => void
+  onPasswordChange: (value: string) => void
+  onCharacterNameChange: (value: string) => void
+  onSubmit: () => void
+}) {
+  return (
+    <section className="landing-card auth-card">
+      <div className="eyebrow"><Sparkles size={15} /> 逆命仙途 · 道庭身份</div>
+      <h1>{mode === 'login' ? '入道' : '立誓入世'}</h1>
+      <p className="tagline">每个账号拥有独立角色与存档。</p>
+      <div className="auth-tabs">
+        <button className={mode === 'login' ? 'active' : ''} onClick={() => onModeChange('login')} type="button">登录</button>
+        <button className={mode === 'register' ? 'active' : ''} onClick={() => onModeChange('register')} type="button">注册</button>
+      </div>
+      <label className="field-label" htmlFor="auth-username">账号</label>
+      <input id="auth-username" className="name-input" value={username} onChange={(event) => onUsernameChange(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && onSubmit()} placeholder="3-40 位字母、数字或下划线" autoComplete="username" />
+      <label className="field-label" htmlFor="auth-password">密码</label>
+      <input id="auth-password" className="name-input" value={password} onChange={(event) => onPasswordChange(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && onSubmit()} type="password" placeholder="至少 8 位" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+      {mode === 'register' && <>
+        <label className="field-label" htmlFor="auth-character">初始道号</label>
+        <input id="auth-character" className="name-input" value={characterName} onChange={(event) => onCharacterNameChange(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && onSubmit()} placeholder="例如：顾长生" maxLength={16} />
+      </>}
+      {error && <p className="error-text"><TriangleAlert size={15} />{error}</p>}
+      <button className="primary-button wide" disabled={loading} onClick={onSubmit} type="button">
+        {loading ? '正在入道…' : mode === 'login' ? '进入道庭' : '创建账号'} <ArrowRight size={18} />
+      </button>
+      <p className="technical-note">密码仅以 PBKDF2 哈希保存，游戏接口使用 JWT 隔离账号存档。</p>
+    </section>
+  )
+}
+
+function RecentRunsPanel({ runs, loading, onRestore }: { runs: GameRunSummary[]; loading: boolean; onRestore: (id: string) => void }) {
+  return (
+    <section className="recent-runs-panel">
+      <div className="section-heading"><span><Database size={15} />我的存档</span><small>仅当前账号可见</small></div>
+      <div className="recent-runs-list">
+        {runs.map((item) => (
+          <div className="recent-run-row" key={item.id}>
+            <div><strong>{item.playerName}</strong><small>{item.status === 'RUNNING' ? '修行中' : item.status === 'ASCENDED' ? '已飞升' : '已陨落'} · 第 {item.currentFloor + 1} 层 · 回合 {item.turn}</small></div>
+            <button className="ghost-button" disabled={loading} onClick={() => onRestore(item.id)} type="button"><Download size={14} />恢复</button>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

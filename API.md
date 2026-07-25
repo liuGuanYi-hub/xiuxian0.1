@@ -5,7 +5,23 @@
 - Base URL：`http://localhost:8080/api`
 - 所有写接口返回完整 `GameRunView`，前端不自行结算属性、价格或随机结果。
 - 错误格式：`{"message":"具体原因"}`。
+- 除 `/auth/**`、`/admin/**` 和公开排行榜外，游戏接口需要 `Authorization: Bearer <JWT>`；未登录统一返回 HTTP 401。
 - `GameRunView` 中的 `build`、`buildStats` 只统计 `ACTIVE` 卡牌；被移除的记录保留在数据库历史中。
+
+## 账号、JWT 与角色
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/auth/register` | 注册账号，返回 JWT 和初始角色 |
+| POST | `/auth/login` | 校验密码并返回 JWT |
+| POST | `/auth/logout` | 无状态登出；客户端删除 JWT |
+| GET | `/players/me` | 查询当前账号及角色列表 |
+| POST | `/players` | 创建当前账号下的角色 |
+| GET | `/game/runs` | 按更新时间倒序查询当前账号的存档摘要 |
+
+注册用户名使用 3-40 位字母、数字或下划线，密码长度为 8-120 位。密码服务端使用 PBKDF2WithHmacSHA256 哈希保存，不保存明文。开始新局时服务端只接受当前 JWT 所属账号下的 `characterId`，并以数据库角色的道号和出身为准。
+
+存档读取、事件选择、战斗、奖励、坊市和结算接口都会按 `user_id` 过滤。旧版本没有账号归属的匿名存档会保留在数据库中，但在账号鉴权模式下不可被新账号读取或认领。
 
 ## 旅程与节点
 
@@ -72,7 +88,7 @@
 - 应用启动时只补充配置表缺失记录，不覆盖已有配置。
 - `event_config` 保存事件/结局正文、事件选项、后继事件、节点权重、稀有度、版本号和启用状态；游戏路线图和事件展示运行时从数据库缓存读取。
 - `skill_config`、`item_config`、`talisman_config` 均带 `config_version` 和 `enabled` 字段；配置初始化只补充缺失卡牌。
-- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260723_v04_build_extension.sql`、`database/migrations/20260723_v05_combat_depth.sql`、`database/migrations/20260724_v06_config_center.sql` 和 `database/migrations/20260724_v06_leaderboard.sql`。
+- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260725_v03_account_auth.sql`、`database/migrations/20260723_v04_build_extension.sql`、`database/migrations/20260723_v05_combat_depth.sql`、`database/migrations/20260724_v06_config_center.sql` 和 `database/migrations/20260724_v06_leaderboard.sql`。
 - `run_build_item` 保存领取/购买时的卡牌快照，后续修改配置不会改变历史存档。
 
 ## 结算与排行榜
@@ -91,7 +107,7 @@
 
 所有 `/api/admin/**` 配置中心接口都需要管理员令牌。请求可以使用 `X-Admin-Token`，也可以使用
 `Authorization: Bearer <token>`。本地开发默认令牌为 `dev-admin-token`，生产环境必须通过
-`ADMIN_CONFIG_TOKEN` 环境变量覆盖，尚未接入账号体系或 JWT。
+`ADMIN_CONFIG_TOKEN` 环境变量覆盖。管理员令牌与玩家 JWT 是两套独立凭证。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
