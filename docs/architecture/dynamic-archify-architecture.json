@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "逆命仙途",
+    "subtitle": "Java-driven text cultivation roguelike",
+    "output": "dynamic-archify-architecture.html"
+  },
+  "components": [
+    {
+      "id": "player",
+      "type": "external",
+      "label": "Player",
+      "sublabel": "Browser",
+      "pos": [
+        20,
+        250
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "React UI",
+      "sublabel": "Vite + TypeScript",
+      "pos": [
+        230,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Spring API",
+      "sublabel": "Game endpoints",
+      "pos": [
+        470,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "game",
+      "type": "backend",
+      "label": "Game Engine",
+      "sublabel": "route + combat",
+      "pos": [
+        710,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "MySQL",
+      "sublabel": "runs + saves",
+      "pos": [
+        950,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "逆命仙途 application",
+      "wraps": [
+        "frontend",
+        "api",
+        "game"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "player",
+      "to": "frontend",
+      "label": "play",
+      "variant": "emphasis"
+    },
+    {
+      "from": "frontend",
+      "to": "api",
+      "label": "REST",
+      "variant": "emphasis"
+    },
+    {
+      "from": "api",
+      "to": "game",
+      "label": "commands"
+    },
+    {
+      "from": "game",
+      "to": "db",
+      "label": "persist"
+    }
+  ],
+  "cards": []
+}
