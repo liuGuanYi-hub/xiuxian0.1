@@ -148,7 +148,7 @@ V0.8 成就记录写入 `achievement_record`，由服务端在创建第一局和
 
 ## 动态系统架构图
 
-![逆命仙途动态系统架构图](docs/architecture/dynamic-archify-architecture.svg)
+![逆命仙途动态系统架构图](docs/architecture/dynamic-archify-architecture.gif)
 
 - [打开交互式动态架构图](docs/architecture/dynamic-archify-architecture.html)
 - [查看架构源数据](docs/architecture/dynamic-archify-architecture.json)
