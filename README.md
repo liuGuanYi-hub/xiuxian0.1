@@ -37,6 +37,8 @@
 - V0.6 终局自动生成不可变结算快照，按进度、属性、精英和构筑计算积分，并提供天道榜
 - V0.3 账号体系：注册/登录使用 PBKDF2 密码哈希和 JWT，角色与游戏存档按账号隔离
 - V0.3 前端支持登录态恢复、角色切换/创建、当前账号最近存档列表和授权恢复
+- V0.7 账号级因果点：死亡/飞升结算发放永久资源，支持五项永久解锁和最近轮回历史
+- V0.7 永久解锁会影响后续新局初始气血、灵力、寿元、因果和灵石，所有计算由服务端完成
 - 生命、灵力、寿元、因果属性变化
 - 存档到 MySQL
 - React 前端展示路线图、节点连线、当前事件和修仙日志
@@ -101,6 +103,8 @@ npm run dev
 | GET | `/api/players/me` | 查询当前账号及角色列表 |
 | POST | `/api/players` | 创建当前账号下的新角色 |
 | GET | `/api/game/runs` | 查询当前账号最近存档 |
+| GET | `/api/account/progress` | 查询因果点、永久解锁和最近结算历史 |
+| POST | `/api/account/unlocks/{unlockId}` | 消耗因果点购买永久解锁 |
 | GET | `/api/game/runs/{id}` | 查询游戏存档 |
 | POST | `/api/game/runs/{id}/nodes/{nodeId}/enter` | 进入当前可达节点 |
 | POST | `/api/game/runs/{id}/choices` | 提交事件选择并解锁下一跳 |
@@ -127,6 +131,8 @@ npm run dev
 游戏接口默认要求 `Authorization: Bearer <JWT>`。JWT 配置项为 `JWT_SECRET`（至少 32 个字符）和 `JWT_EXPIRATION_MS`；本地开发可使用默认值，部署时应覆盖。
 
 配置中心接口需要独立的管理员令牌。本地开发默认使用 `dev-admin-token`；部署时请设置 `ADMIN_CONFIG_TOKEN`，不要使用默认值。管理员令牌不等同于玩家 JWT。
+
+V0.7 永久进度接口需要玩家 JWT。结算时服务端将因果点写入 `user_account`，并在 `run_settlement.causality_earned` 保存本局发放快照；重复恢复不会重复发放。永久解锁记录写入 `unlock_record`，同一账号不能重复购买同一解锁。
 
 ## 默认数据库配置
 

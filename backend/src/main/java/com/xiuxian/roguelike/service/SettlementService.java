@@ -20,13 +20,16 @@ public class SettlementService {
     private final RunMapService runMapService;
     private final BuildService buildService;
     private final EventConfigService eventConfigService;
+    private final PermanentProgressService permanentProgressService;
 
     public SettlementService(RunSettlementRepository settlementRepository, RunMapService runMapService,
-                             BuildService buildService, EventConfigService eventConfigService) {
+                             BuildService buildService, EventConfigService eventConfigService,
+                             PermanentProgressService permanentProgressService) {
         this.settlementRepository = settlementRepository;
         this.runMapService = runMapService;
         this.buildService = buildService;
         this.eventConfigService = eventConfigService;
+        this.permanentProgressService = permanentProgressService;
     }
 
     @Transactional
@@ -43,12 +46,15 @@ public class SettlementService {
             String endingId = run.getEndingId() == null ? "fallen_path" : run.getEndingId();
             String endingTitle = endingTitle(endingId);
             int score = score(run, activeCards, eliteCount);
-            return settlementRepository.save(new RunSettlementEntity(
-                    run.getId(), run.getPlayerName(), run.getOrigin(), run.getStatus(), endingId, endingTitle,
+            int causalityEarned = causalityEarned(run, eliteCount);
+            RunSettlementEntity settlement = settlementRepository.save(new RunSettlementEntity(
+                    run.getId(), run.getUserId(), run.getCharacterId(), run.getPlayerName(), run.getOrigin(), run.getStatus(), endingId, endingTitle,
                     run.getCurrentFloor() + 1, run.getTurn(), run.getHealth(), run.getSpirit(),
                     run.getLifespan(), run.getKarma(), run.getSpiritStones(), activeCards, eliteCount,
-                    score, run.getSeed()
+                    score, causalityEarned, run.getSeed()
             ));
+            permanentProgressService.awardForSettlement(run, causalityEarned);
+            return settlement;
         });
     }
 
@@ -59,7 +65,7 @@ public class SettlementService {
                 settlement.getFloorReached(), settlement.getTurn(), settlement.getHealth(),
                 settlement.getSpirit(), settlement.getLifespan(), settlement.getKarma(),
                 settlement.getSpiritStones(), settlement.getActiveCards(), settlement.getEliteCount(),
-                settlement.getScore(), settlement.getSettledAt().toString());
+                settlement.getScore(), settlement.getCausalityEarned(), settlement.getSettledAt().toString());
     }
 
     public List<LeaderboardEntryView> leaderboard(int requestedLimit) {
@@ -87,6 +93,14 @@ public class SettlementService {
         score += eliteCount * 120;
         if ("ASCENDED".equals(run.getStatus())) score += 1000;
         return score;
+    }
+
+    private int causalityEarned(GameRunEntity run, int eliteCount) {
+        int base = "ASCENDED".equals(run.getStatus()) ? 20 : 3;
+        int floorReward = (run.getCurrentFloor() + 1) * 2;
+        int eliteReward = eliteCount * 3;
+        int karmaReward = Math.max(0, run.getKarma() / 3);
+        return Math.max(1, base + floorReward + eliteReward + karmaReward);
     }
 
     private String endingTitle(String endingId) {

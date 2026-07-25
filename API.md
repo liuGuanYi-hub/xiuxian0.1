@@ -7,6 +7,7 @@
 - 错误格式：`{"message":"具体原因"}`。
 - 除 `/auth/**`、`/admin/**` 和公开排行榜外，游戏接口需要 `Authorization: Bearer <JWT>`；未登录统一返回 HTTP 401。
 - `GameRunView` 中的 `build`、`buildStats` 只统计 `ACTIVE` 卡牌；被移除的记录保留在数据库历史中。
+- 已登录的 `GameRunView.accountProgress` 返回当前账号永久进度；匿名兼容模式下该字段为 `null`。
 
 ## 账号、JWT 与角色
 
@@ -88,7 +89,7 @@
 - 应用启动时只补充配置表缺失记录，不覆盖已有配置。
 - `event_config` 保存事件/结局正文、事件选项、后继事件、节点权重、稀有度、版本号和启用状态；游戏路线图和事件展示运行时从数据库缓存读取。
 - `skill_config`、`item_config`、`talisman_config` 均带 `config_version` 和 `enabled` 字段；配置初始化只补充缺失卡牌。
-- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260725_v03_account_auth.sql`、`database/migrations/20260723_v04_build_extension.sql`、`database/migrations/20260723_v05_combat_depth.sql`、`database/migrations/20260724_v06_config_center.sql` 和 `database/migrations/20260724_v06_leaderboard.sql`。
+- 新环境可执行 `database/init.sql`；已有环境按顺序执行 `database/migrations/20260725_v03_account_auth.sql`、`database/migrations/20260723_v04_build_extension.sql`、`database/migrations/20260723_v05_combat_depth.sql`、`database/migrations/20260724_v06_config_center.sql`、`database/migrations/20260724_v06_leaderboard.sql` 和 `database/migrations/20260725_v07_permanent_progress.sql`。
 - `run_build_item` 保存领取/购买时的卡牌快照，后续修改配置不会改变历史存档。
 
 ## 结算与排行榜
@@ -101,7 +102,26 @@
 | --- | --- | --- |
 | GET | `/leaderboard?limit=10` | 查询积分最高的已结算旅程，服务端将 limit 限制在 1~50 |
 
-`SettlementView` 包含：结局、抵达层数、回合、终局属性、有效卡牌数、精英挑战数、积分和结算时间。排行榜只读取快照，不重新计算历史积分。
+`SettlementView` 包含：结局、抵达层数、回合、终局属性、有效卡牌数、精英挑战数、积分、因果点发放数和结算时间。排行榜只读取快照，不重新计算历史积分。
+
+## V0.7 永久因果与账号数据
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/account/progress` | 查询当前账号因果点、累计统计、永久解锁和最近 10 条结算 |
+| POST | `/account/unlocks/{unlockId}` | 消耗因果点购买永久解锁，返回最新账号进度 |
+
+当前永久解锁：
+
+| ID | 名称 | 费用 | 后续新局效果 |
+| --- | --- | ---: | --- |
+| `first_breath` | 先天气血 | 5 | 初始气血 +8 |
+| `spirit_spring` | 灵泉回响 | 15 | 初始灵力 +5 |
+| `long_life` | 长生余烬 | 20 | 初始寿元 +5 |
+| `karma_lens` | 因果观 | 25 | 初始因果 +2 |
+| `wealth_memory` | 旧日宝藏 | 30 | 初始灵石 +20 |
+
+死亡结算基础发放 3 点因果，飞升结算基础发放 20 点；抵达层数、精英挑战和正因果会提高发放量。发放结果写入 `run_settlement.causality_earned`，以结算快照保证幂等。永久进度按账号共享，角色之间不会互相覆盖。
 
 ## 配置中心接口
 

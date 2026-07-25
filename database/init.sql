@@ -74,6 +74,9 @@ CREATE TABLE IF NOT EXISTS user_account (
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
   created_at DATETIME(6) NOT NULL,
   updated_at DATETIME(6) NOT NULL,
+  causality_points INT NOT NULL DEFAULT 0,
+  total_causality_earned INT NOT NULL DEFAULT 0,
+  total_causality_spent INT NOT NULL DEFAULT 0,
   KEY idx_user_account_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -85,6 +88,16 @@ CREATE TABLE IF NOT EXISTS player_character (
   created_at DATETIME(6) NOT NULL,
   updated_at DATETIME(6) NOT NULL,
   KEY idx_player_character_user (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS unlock_record (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id VARCHAR(36) NOT NULL,
+  unlock_id VARCHAR(60) NOT NULL,
+  cost INT NOT NULL,
+  unlocked_at DATETIME(6) NOT NULL,
+  UNIQUE KEY uk_unlock_record_user_unlock (user_id, unlock_id),
+  KEY idx_unlock_record_user (user_id, unlocked_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS game_run (
@@ -120,6 +133,8 @@ CREATE TABLE IF NOT EXISTS game_run (
 CREATE TABLE IF NOT EXISTS run_settlement (
   id VARCHAR(36) PRIMARY KEY,
   run_id VARCHAR(36) NOT NULL UNIQUE,
+  user_id VARCHAR(36) NULL,
+  character_id VARCHAR(36) NULL,
   player_name VARCHAR(32) NOT NULL,
   origin VARCHAR(32) NOT NULL,
   status VARCHAR(20) NOT NULL,
@@ -135,6 +150,7 @@ CREATE TABLE IF NOT EXISTS run_settlement (
   active_cards INT NOT NULL,
   elite_count INT NOT NULL,
   score INT NOT NULL,
+  causality_earned INT NOT NULL DEFAULT 0,
   run_seed BIGINT NOT NULL,
   settled_at DATETIME(6) NOT NULL,
   KEY idx_run_settlement_score (score, settled_at)

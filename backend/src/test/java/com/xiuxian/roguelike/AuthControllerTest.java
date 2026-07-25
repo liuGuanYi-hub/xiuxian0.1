@@ -2,6 +2,9 @@ package com.xiuxian.roguelike;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiuxian.roguelike.domain.GameRunEntity;
+import com.xiuxian.roguelike.repository.GameRunRepository;
+import com.xiuxian.roguelike.service.SettlementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,6 +35,12 @@ class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private GameRunRepository gameRunRepository;
+
+    @Autowired
+    private SettlementService settlementService;
 
     @Test
     void registerLoginAndQueryCurrentAccount() throws Exception {
@@ -91,6 +100,69 @@ class AuthControllerTest {
         assertEquals(runId, ownRuns.get(0).get("id").asText());
         assertEquals(characterId, ownRuns.get(0).get("characterId").asText());
         assertEquals("守心客", ownRuns.get(0).get("playerName").asText());
+    }
+
+    @Test
+    void settlementAwardsAccountCausalityAndUnlockChangesNextRun() throws Exception {
+        String username = "progress_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        JsonNode owner = register(username, "轮回客");
+        String token = owner.get("token").asText();
+        String characterId = owner.get("account").get("characters").get(0).get("id").asText();
+
+        JsonNode started = objectMapper.readTree(mockMvc.perform(post("/api/game/runs")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerName\":\"轮回客\",\"origin\":\"散修\",\"characterId\":\""
+                                + characterId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        String runId = started.get("id").asText();
+        GameRunEntity run = gameRunRepository.findById(runId).orElseThrow();
+        run.applyChoice(0, 0, 0, 0, "awaiting_node", "炼气二层", "DEAD", "fallen_path");
+        gameRunRepository.save(run);
+        settlementService.ensure(run);
+
+        JsonNode progress = objectMapper.readTree(mockMvc.perform(get("/api/account/progress")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertTrue(progress.get("causalityPoints").asInt() > 0);
+        assertEquals(1, progress.get("completedRuns").asInt());
+        assertTrue(progress.get("recentSettlements").size() >= 1);
+
+        mockMvc.perform(get("/api/game/runs/{id}", runId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        JsonNode restoredProgress = objectMapper.readTree(mockMvc.perform(get("/api/account/progress")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(progress.get("causalityPoints").asInt(), restoredProgress.get("causalityPoints").asInt());
+
+        JsonNode unlocked = objectMapper.readTree(mockMvc.perform(post("/api/account/unlocks/first_breath")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        boolean firstBreathUnlocked = false;
+        for (JsonNode item : unlocked.get("unlocks")) {
+            if ("first_breath".equals(item.get("id").asText())) {
+                firstBreathUnlocked = item.get("unlocked").asBoolean();
+            }
+        }
+        assertTrue(firstBreathUnlocked);
+
+        JsonNode nextRun = objectMapper.readTree(mockMvc.perform(post("/api/game/runs")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerName\":\"伪造名\",\"origin\":\"伪造出身\",\"characterId\":\""
+                                + characterId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(108, nextRun.get("health").asInt());
+
+        mockMvc.perform(post("/api/account/unlocks/first_breath")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
     }
 
     private JsonNode register(String username, String characterName) throws Exception {

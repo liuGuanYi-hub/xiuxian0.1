@@ -254,9 +254,24 @@ h1, h2, p { margin-top: 0; }
 .recent-run-row > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
 .recent-run-row strong { overflow: hidden; color: #e8ece2; text-overflow: ellipsis; white-space: nowrap; }
 .recent-run-row small { color: #9daeb1; font-family: system-ui, sans-serif; font-size: 10px; }
+.progress-panel { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(199, 176, 125, .16); }
+.progress-panel .section-heading { display: flex; align-items: center; justify-content: space-between; }
+.progress-panel .section-heading > span { display: inline-flex; align-items: center; gap: 7px; color: #ead7ac; }
+.progress-panel .section-heading small { color: #81909d; font-family: system-ui, sans-serif; font-size: 10px; }
+.progress-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 11px; }
+.progress-metrics div { padding: 10px 6px; text-align: center; background: rgba(255, 255, 255, .035); }
+.progress-metrics strong, .progress-metrics small { display: block; }.progress-metrics strong { color: #e7c477; font-size: 20px; }.progress-metrics small { margin-top: 3px; color: #9daeb1; font-family: system-ui, sans-serif; font-size: 10px; }
+.unlock-list { display: grid; gap: 7px; margin-top: 11px; }
+.unlock-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid #293846; background: rgba(20, 34, 45, .55); }
+.unlock-row.unlocked { border-color: #526c59; background: rgba(38, 59, 47, .38); }
+.unlock-row > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }.unlock-row strong { color: #d8c9ae; font-size: 12px; }.unlock-row small { color: #81909d; font-family: system-ui, sans-serif; font-size: 10px; line-height: 1.45; }.unlock-row .ghost-button { flex: 0 0 auto; padding: 7px 9px; font-size: 10px; }
+.unlock-owned { flex: 0 0 auto; color: #9bbf93; font-family: system-ui, sans-serif; font-size: 10px; }
+.settlement-history { margin-top: 16px; padding-top: 13px; border-top: 1px solid #293846; }.settlement-history .stats-block-title { margin-bottom: 8px; }.history-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; color: #9daeb1; font-family: system-ui, sans-serif; font-size: 10px; }.history-row b { color: #e7c477; font-weight: 500; }
+.progress-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 18px; padding: 11px 14px; color: #9eb5b8; border: 1px solid rgba(111, 164, 173, .22); border-radius: 12px; background: rgba(21, 36, 45, .72); font-family: system-ui, sans-serif; font-size: 11px; }.progress-summary span { display: inline-flex; align-items: center; gap: 5px; }
 
 @media (max-width: 640px) {
   .character-grid { grid-template-columns: 1fr 1fr; }
   .new-character-fields { grid-template-columns: 1fr; }
   .game-header-actions { justify-content: flex-start; }
+  .unlock-row { align-items: flex-start; flex-direction: column; }.unlock-row .ghost-button { width: 100%; }.progress-summary { gap: 7px 12px; }
 }

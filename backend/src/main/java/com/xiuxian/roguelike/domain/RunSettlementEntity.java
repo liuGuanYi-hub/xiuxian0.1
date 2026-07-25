@@ -25,6 +25,12 @@ public class RunSettlementEntity {
     @Column(name = "run_id", length = 36, nullable = false, updatable = false)
     private String runId;
 
+    @Column(name = "user_id", length = 36, updatable = false)
+    private String userId;
+
+    @Column(name = "character_id", length = 36, updatable = false)
+    private String characterId;
+
     @Column(name = "player_name", length = 32, nullable = false)
     private String playerName;
 
@@ -70,6 +76,9 @@ public class RunSettlementEntity {
     @Column(nullable = false)
     private int score;
 
+    @Column(name = "causality_earned", nullable = false)
+    private int causalityEarned;
+
     @Column(name = "run_seed", nullable = false)
     private long runSeed;
 
@@ -79,12 +88,14 @@ public class RunSettlementEntity {
     protected RunSettlementEntity() {
     }
 
-    public RunSettlementEntity(String runId, String playerName, String origin, String status,
+    public RunSettlementEntity(String runId, String userId, String characterId, String playerName, String origin, String status,
                                String endingId, String endingTitle, int floorReached, int turn,
                                int health, int spirit, int lifespan, int karma, int spiritStones,
-                               int activeCards, int eliteCount, int score, long runSeed) {
+                               int activeCards, int eliteCount, int score, int causalityEarned, long runSeed) {
         this.id = UUID.randomUUID().toString();
         this.runId = runId;
+        this.userId = userId;
+        this.characterId = characterId;
         this.playerName = playerName;
         this.origin = origin;
         this.status = status;
@@ -100,11 +111,14 @@ public class RunSettlementEntity {
         this.activeCards = activeCards;
         this.eliteCount = eliteCount;
         this.score = score;
+        this.causalityEarned = causalityEarned;
         this.runSeed = runSeed;
         this.settledAt = LocalDateTime.now();
     }
 
     public String getRunId() { return runId; }
+    public String getUserId() { return userId; }
+    public String getCharacterId() { return characterId; }
     public String getPlayerName() { return playerName; }
     public String getOrigin() { return origin; }
     public String getStatus() { return status; }
@@ -120,6 +134,7 @@ public class RunSettlementEntity {
     public int getActiveCards() { return activeCards; }
     public int getEliteCount() { return eliteCount; }
     public int getScore() { return score; }
+    public int getCausalityEarned() { return causalityEarned; }
     public long getRunSeed() { return runSeed; }
     public LocalDateTime getSettledAt() { return settledAt; }
 }

@@ -1,4 +1,4 @@
-import type { Account, AuthResponse, GameRun, GameRunSummary, LeaderboardEntry } from './types'
+import type { Account, AccountProgress, AuthResponse, GameRun, GameRunSummary, LeaderboardEntry } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api'
 const AUTH_TOKEN_KEY = 'xiuxian.auth.token'
@@ -63,6 +63,16 @@ export function createCharacter(name: string, origin: string) {
 
 export function getRecentRuns() {
   return request<GameRunSummary[]>('/game/runs')
+}
+
+export function getAccountProgress() {
+  return request<AccountProgress>('/account/progress')
+}
+
+export function purchaseUnlock(unlockId: string) {
+  return request<AccountProgress>(`/account/unlocks/${encodeURIComponent(unlockId)}`, {
+    method: 'POST',
+  })
 }
 
 export function startRun(playerName: string, origin: string, characterId?: string) {

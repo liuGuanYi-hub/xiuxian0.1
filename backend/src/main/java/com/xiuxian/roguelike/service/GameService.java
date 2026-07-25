@@ -6,6 +6,7 @@ import com.xiuxian.roguelike.api.GameDtos.CombatActionRequest;
 import com.xiuxian.roguelike.api.GameDtos.CombatView;
 import com.xiuxian.roguelike.api.GameDtos.ConfigStatusView;
 import com.xiuxian.roguelike.api.GameDtos.SettlementView;
+import com.xiuxian.roguelike.api.ProgressDtos.AccountProgressView;
 import com.xiuxian.roguelike.api.GameDtos.BuildCardView;
 import com.xiuxian.roguelike.api.GameDtos.BuildStatsView;
 import com.xiuxian.roguelike.api.GameDtos.EndingView;
@@ -60,6 +61,7 @@ public class GameService {
     private final CombatService combatService;
     private final SettlementService settlementService;
     private final AccountService accountService;
+    private final PermanentProgressService permanentProgressService;
     private final AuthContext authContext;
     private final boolean authRequired;
 
@@ -69,7 +71,8 @@ public class GameService {
                        RunMapService runMapService, BuildService buildService, BuildConfigService configService,
                        EventConfigService eventConfigService, CombatService combatService,
                        SettlementService settlementService, AccountService accountService,
-                       AuthContext authContext, @Value("${app.auth.required:true}") boolean authRequired) {
+                       PermanentProgressService permanentProgressService, AuthContext authContext,
+                       @Value("${app.auth.required:true}") boolean authRequired) {
         this.gameRunRepository = gameRunRepository;
         this.runEventRepository = runEventRepository;
         this.buildItemRepository = buildItemRepository;
@@ -83,6 +86,7 @@ public class GameService {
         this.combatService = combatService;
         this.settlementService = settlementService;
         this.accountService = accountService;
+        this.permanentProgressService = permanentProgressService;
         this.authContext = authContext;
         this.authRequired = authRequired;
     }
@@ -105,10 +109,17 @@ public class GameService {
             throw new IllegalStateException("请先登录账号。");
         }
         GameRunEntity run = new GameRunEntity(id, userId, characterId, playerName, origin, seed, "awaiting_node");
+        PermanentProgressService.StartingBonuses bonuses = permanentProgressService.startingBonuses(userId);
+        run.applyPermanentBonuses(bonuses.health(), bonuses.spirit(), bonuses.lifespan(),
+                bonuses.karma(), bonuses.spiritStones());
         gameRunRepository.save(run);
         buildService.initialize(run);
         runMapService.generate(run);
-        return toView(run, List.of("路线图已经生成，选择第一层的相邻节点开始修行。"));
+        List<String> logs = bonuses.equals(PermanentProgressService.StartingBonuses.ZERO)
+                ? List.of("路线图已经生成，选择第一层的相邻节点开始修行。")
+                : List.of("永久解锁已经生效：本局初始属性获得轮回加成。",
+                "路线图已经生成，选择第一层的相邻节点开始修行。");
+        return toView(run, logs);
     }
 
     @Transactional
@@ -683,6 +694,9 @@ public class GameService {
         CombatView combat = combatService.toView(combatService.active(run.getId()));
         EventConfigService.ConfigStatus configStatus = eventConfigService.status();
         SettlementView settlement = settlementService.toView(settlementService.ensure(run));
+        AccountProgressView accountProgress = authContext.current()
+                .map(user -> permanentProgressService.view(user.userId()))
+                .orElse(null);
 
         return new GameRunView(
                 run.getId(), run.getPlayerName(), run.getOrigin(), run.getRealm(),
@@ -691,7 +705,7 @@ public class GameService {
                 new EventView(event.id(), event.title(), event.description(), choices, meta.rarity(), meta.repeatable()),
                 map, ending, build, buildStats, upgradeOptions, rewardOffers, shop, removal, combat,
                 new ConfigStatusView(configStatus.activeEvents(), configStatus.activeEndings(),
-                        configStatus.maxVersion(), configStatus.valid()), settlement, logs
+                        configStatus.maxVersion(), configStatus.valid()), settlement, accountProgress, logs
         );
     }
 

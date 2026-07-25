@@ -11,4 +11,6 @@ public interface GameRunRepository extends JpaRepository<GameRunEntity, String> 
     Optional<GameRunEntity> findByIdAndUserId(String id, String userId);
 
     List<GameRunEntity> findByUserIdOrderByUpdatedAtDesc(String userId);
+
+    long countByUserId(String userId);
 }

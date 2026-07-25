@@ -194,6 +194,36 @@ export type GameRunSummary = {
   updatedAt: string
 }
 
+export type PermanentUnlock = {
+  id: string
+  name: string
+  description: string
+  cost: number
+  unlocked: boolean
+  effectText: string
+}
+
+export type SettlementHistory = {
+  runId: string
+  characterId: string | null
+  playerName: string
+  status: 'DEAD' | 'ASCENDED'
+  endingTitle: string
+  score: number
+  causalityEarned: number
+  settledAt: string
+}
+
+export type AccountProgress = {
+  causalityPoints: number
+  totalCausalityEarned: number
+  totalCausalitySpent: number
+  totalRuns: number
+  completedRuns: number
+  unlocks: PermanentUnlock[]
+  recentSettlements: SettlementHistory[]
+}
+
 export type GameRun = {
   id: string
   playerName: string
@@ -220,5 +250,6 @@ export type GameRun = {
   combat: CombatView | null
   configStatus: ConfigStatus
   settlement: Settlement | null
+  accountProgress: AccountProgress | null
   logs: string[]
 }

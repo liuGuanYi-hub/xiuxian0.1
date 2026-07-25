@@ -192,6 +192,16 @@ public class GameRunEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void applyPermanentBonuses(int healthBonus, int spiritBonus, int lifespanBonus,
+                                      int karmaBonus, int spiritStonesBonus) {
+        this.health += healthBonus;
+        this.spirit += spiritBonus;
+        this.lifespan += lifespanBonus;
+        this.karma += karmaBonus;
+        this.spiritStones += spiritStonesBonus;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void setPendingUpgradeNode(String nodeId) {
         this.pendingUpgradeNodeId = nodeId;
         this.updatedAt = LocalDateTime.now();

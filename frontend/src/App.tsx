@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowRight, Coins, Compass, Crosshair, Database, Download, Flame, Heart, Hourglass, Layers, RefreshCw, RotateCcw, Shield, ShoppingBag, Sparkles, Trash2, TriangleAlert, Trophy } from 'lucide-react'
-import { buyShopOffer, chooseEvent, claimReward, clearAuthToken, combatAction, createCharacter, enterNode, getCurrentAccount, getAuthToken, getLeaderboard, getRecentRuns, leaveShop, loginAccount, refreshShop, registerAccount, removeShopCard, removeSpecialCard, restoreRun, setAuthToken, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
-import type { Account, BuildStats, Character, CombatView, GameRun, GameRunSummary, LeaderboardEntry, MapNode, RemovalState, RewardOffer, ShopState } from './types'
+import { buyShopOffer, chooseEvent, claimReward, clearAuthToken, combatAction, createCharacter, enterNode, getAccountProgress, getCurrentAccount, getAuthToken, getLeaderboard, getRecentRuns, leaveShop, loginAccount, purchaseUnlock, refreshShop, registerAccount, removeShopCard, removeSpecialCard, restoreRun, setAuthToken, skipSpecialRemoval, skipUpgrade, startRun, upgradeCard } from './api'
+import type { Account, AccountProgress, BuildStats, Character, CombatView, GameRun, GameRunSummary, LeaderboardEntry, MapNode, RemovalState, RewardOffer, ShopState } from './types'
 
 const origins = [
   { value: '散修', description: '自由自在，初始因果较低' },
@@ -33,6 +33,7 @@ function App() {
   const [origin, setOrigin] = useState(origins[0].value)
   const [restoreId, setRestoreId] = useState('')
   const [run, setRun] = useState<GameRun | null>(null)
+  const [progress, setProgress] = useState<AccountProgress | null>(null)
   const [recentRuns, setRecentRuns] = useState<GameRunSummary[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -70,10 +71,16 @@ function App() {
   useEffect(() => {
     if (!account) {
       setRecentRuns([])
+      setProgress(null)
       return
     }
     void getRecentRuns().then(setRecentRuns).catch(() => undefined)
+    void getAccountProgress().then(setProgress).catch(() => undefined)
   }, [account, run?.status, run?.id])
+
+  useEffect(() => {
+    if (run?.accountProgress) setProgress(run.accountProgress)
+  }, [run?.accountProgress])
 
   useEffect(() => {
     let cancelled = false
@@ -137,11 +144,24 @@ function App() {
     }
   }
 
+  async function buyPermanentUnlock(unlockId: string) {
+    setLoading(true)
+    setError('')
+    try {
+      setProgress(await purchaseUnlock(unlockId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '永久解锁失败。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function logout() {
     clearAuthToken()
     setAccount(null)
     setRun(null)
     setRecentRuns([])
+    setProgress(null)
     setError('')
   }
 
@@ -431,6 +451,7 @@ function App() {
               </button>
             </div>
           </div>
+          {progress && <ProgressPanel progress={progress} loading={loading} onUnlock={(unlockId) => void buyPermanentUnlock(unlockId)} />}
           {recentRuns.length > 0 && <RecentRunsPanel runs={recentRuns} loading={loading} onRestore={(id) => { setRestoreId(id); void restoreRun(id).then(setRun).catch((err) => setError(err instanceof Error ? err.message : '存档恢复失败。')) }} />}
           <LeaderboardPanel entries={leaderboard} />
           <p className="technical-note">React 前端 · Java Spring Boot · MySQL 存档</p>
@@ -465,6 +486,7 @@ function App() {
 
       <BuildPanel cards={run.build} />
       <BuildStatsPanel stats={run.buildStats} />
+      {run.accountProgress && <ProgressSummary progress={run.accountProgress} />}
       <ConfigStatusPanel status={run.configStatus} />
 
       {run.rewardOffers.length > 0 && (
@@ -605,6 +627,33 @@ function AuthPanel({
       <p className="technical-note">密码仅以 PBKDF2 哈希保存，游戏接口使用 JWT 隔离账号存档。</p>
     </section>
   )
+}
+
+function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgress; loading: boolean; onUnlock: (unlockId: string) => void }) {
+  return (
+    <section className="progress-panel">
+      <div className="section-heading"><span><Sparkles size={15} />因果轮回</span><small>永久进度 · 账号共享</small></div>
+      <div className="progress-metrics">
+        <div><strong>{progress.causalityPoints}</strong><small>可用因果点</small></div>
+        <div><strong>{progress.totalCausalityEarned}</strong><small>累计获得</small></div>
+        <div><strong>{progress.completedRuns}</strong><small>完成轮回</small></div>
+      </div>
+      <div className="unlock-list">
+        {progress.unlocks.map((unlock) => (
+          <div className={`unlock-row ${unlock.unlocked ? 'unlocked' : ''}`} key={unlock.id}>
+            <div><strong>{unlock.name}</strong><small>{unlock.description} · {unlock.effectText}</small></div>
+            {unlock.unlocked ? <span className="unlock-owned">已觉醒</span> : <button className="ghost-button" disabled={loading || progress.causalityPoints < unlock.cost} onClick={() => onUnlock(unlock.id)} type="button"><Coins size={13} />{unlock.cost} 解锁</button>}
+          </div>
+        ))}
+      </div>
+      {progress.recentSettlements.length > 0 && <div className="settlement-history"><div className="stats-block-title"><Trophy size={14} />最近结算</div>{progress.recentSettlements.slice(0, 3).map((settlement) => <div className="history-row" key={settlement.runId}><span>{settlement.playerName} · {settlement.endingTitle}</span><b>+{settlement.causalityEarned}</b></div>)}</div>}
+    </section>
+  )
+}
+
+function ProgressSummary({ progress }: { progress: AccountProgress }) {
+  const unlocked = progress.unlocks.filter((item) => item.unlocked).length
+  return <section className="progress-summary"><span><Sparkles size={14} />账号因果 {progress.causalityPoints}</span><span>永久解锁 {unlocked}/{progress.unlocks.length}</span><span>完成轮回 {progress.completedRuns}</span></section>
 }
 
 function RecentRunsPanel({ runs, loading, onRestore }: { runs: GameRunSummary[]; loading: boolean; onRestore: (id: string) => void }) {

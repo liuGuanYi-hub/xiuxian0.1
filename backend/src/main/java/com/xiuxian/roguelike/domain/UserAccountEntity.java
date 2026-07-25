@@ -33,6 +33,15 @@ public class UserAccountEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "causality_points", nullable = false)
+    private int causalityPoints;
+
+    @Column(name = "total_causality_earned", nullable = false)
+    private int totalCausalityEarned;
+
+    @Column(name = "total_causality_spent", nullable = false)
+    private int totalCausalitySpent;
+
     protected UserAccountEntity() {
     }
 
@@ -43,6 +52,9 @@ public class UserAccountEntity {
         this.status = "ACTIVE";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
+        this.causalityPoints = 0;
+        this.totalCausalityEarned = 0;
+        this.totalCausalitySpent = 0;
     }
 
     public String getId() { return id; }
@@ -51,4 +63,23 @@ public class UserAccountEntity {
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public int getCausalityPoints() { return causalityPoints; }
+    public int getTotalCausalityEarned() { return totalCausalityEarned; }
+    public int getTotalCausalitySpent() { return totalCausalitySpent; }
+
+    public void addCausality(int amount) {
+        if (amount < 0) throw new IllegalArgumentException("因果点增加值不能为负数。");
+        this.causalityPoints += amount;
+        this.totalCausalityEarned += amount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void spendCausality(int amount) {
+        if (amount < 0 || this.causalityPoints < amount) {
+            throw new IllegalArgumentException("因果点不足。");
+        }
+        this.causalityPoints -= amount;
+        this.totalCausalitySpent += amount;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
