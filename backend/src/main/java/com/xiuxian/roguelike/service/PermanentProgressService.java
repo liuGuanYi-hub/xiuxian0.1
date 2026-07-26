@@ -113,10 +113,12 @@ public class PermanentProgressService {
         long ascendedRuns = settlementRepository.countByUserIdAndStatus(userId, "ASCENDED");
         long deadRuns = settlementRepository.countByUserIdAndStatus(userId, "DEAD");
         int achievementCount = (int) achievements.stream().filter(AchievementView::unlocked).count();
+        int totalAchievementRewards = achievements.stream().filter(AchievementView::unlocked)
+                .mapToInt(AchievementView::rewardCausality).sum();
         return new AccountProgressView(account.getCausalityPoints(), account.getTotalCausalityEarned(),
                 account.getTotalCausalitySpent(), gameRunRepository.countByUserId(userId),
                 settlementRepository.countByUserId(userId), ascendedRuns, deadRuns, highestFloor, bestScore,
-                achievementCount, unlocks, achievements, history);
+                achievementCount, totalAchievementRewards, unlocks, achievements, history);
     }
 
     private UserAccountEntity account(String userId) {

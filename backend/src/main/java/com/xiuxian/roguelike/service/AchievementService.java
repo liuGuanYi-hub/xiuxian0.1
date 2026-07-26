@@ -69,40 +69,49 @@ public class AchievementService {
                         record -> record, (left, right) -> left));
         return CATALOG.values().stream().map(definition -> {
             AchievementRecordEntity record = owned.get(definition.id());
+            int rewardCausality = record == null ? definition.rewardCausality() : record.getRewardCausality();
             return new AchievementView(definition.id(), definition.name(), definition.description(),
-                    definition.conditionText(), record != null,
+                    definition.conditionText(), record != null, rewardCausality,
                     record == null ? null : record.getAwardedAt().toString());
         }).toList();
     }
 
     private void award(String userId, String achievementId, String runId) {
         if (userId == null || userId.isBlank() || !CATALOG.containsKey(achievementId)) return;
-        if (achievementRecordRepository.findByUserIdAndAchievementId(userId, achievementId).isEmpty()) {
-            achievementRecordRepository.save(new AchievementRecordEntity(userId, achievementId, runId));
+        if (achievementRecordRepository.findByUserIdAndAchievementId(userId, achievementId).isPresent()) return;
+        AchievementDefinition definition = CATALOG.get(achievementId);
+        achievementRecordRepository.save(new AchievementRecordEntity(userId, achievementId, runId,
+                definition.rewardCausality()));
+        if (definition.rewardCausality() > 0) {
+            UserAccountEntity account = userAccountRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalStateException("当前账号不存在。"));
+            account.addCausality(definition.rewardCausality());
+            userAccountRepository.save(account);
         }
     }
 
     private static Map<String, AchievementDefinition> catalog() {
         Map<String, AchievementDefinition> definitions = new LinkedHashMap<>();
         definitions.put("first_step", new AchievementDefinition("first_step", "踏出第一步",
-                "第一次创建修行存档，因果从此开始流动。", "开始一局新的修行"));
+                "第一次创建修行存档，因果从此开始流动。", "开始一局新的修行", 2));
         definitions.put("first_settlement", new AchievementDefinition("first_settlement", "因果初结",
-                "完成一次死亡或飞升结算，留下第一份轮回记录。", "完成一次结算"));
+                "完成一次死亡或飞升结算，留下第一份轮回记录。", "完成一次结算", 3));
         definitions.put("fallen_once", new AchievementDefinition("fallen_once", "劫后余生",
-                "即使道途断绝，结算后的记忆也会成为下一次修行的火种。", "经历一次死亡结算"));
+                "即使道途断绝，结算后的记忆也会成为下一次修行的火种。", "经历一次死亡结算", 4));
         definitions.put("ascension", new AchievementDefinition("ascension", "白日飞升",
-                "越过天关尽头，让一局修行以飞升收束。", "完成一次飞升结算"));
+                "越过天关尽头，让一局修行以飞升收束。", "完成一次飞升结算", 10));
         definitions.put("deep_tribulation", new AchievementDefinition("deep_tribulation", "深入天关",
-                "在层层劫难中走得足够深，触及第五层及以后。", "单局抵达第 5 层"));
+                "在层层劫难中走得足够深，触及第五层及以后。", "单局抵达第 5 层", 5));
         definitions.put("elite_hunter", new AchievementDefinition("elite_hunter", "猎尽强敌",
-                "精英守关者的战利品，证明你的构筑经得起硬仗。", "单局击破 3 个精英节点"));
+                "精英守关者的战利品，证明你的构筑经得起硬仗。", "单局击破 3 个精英节点", 6));
         definitions.put("build_master", new AchievementDefinition("build_master", "百炼成器",
-                "收集足够多的功法、法宝与符箓，构筑开始自成一派。", "单局结算时拥有 10 张有效卡"));
+                "收集足够多的功法、法宝与符箓，构筑开始自成一派。", "单局结算时拥有 10 张有效卡", 8));
         definitions.put("causality_collector", new AchievementDefinition("causality_collector", "因果富足",
-                "多次轮回积攒的因果，终于足以撬动更长远的命数。", "账号累计获得 30 点因果"));
+                "多次轮回积攒的因果，终于足以撬动更长远的命数。", "账号累计获得 30 点因果", 12));
         return Collections.unmodifiableMap(definitions);
     }
 
-    private record AchievementDefinition(String id, String name, String description, String conditionText) {
+    private record AchievementDefinition(String id, String name, String description, String conditionText,
+                                         int rewardCausality) {
     }
 }

@@ -17,13 +17,15 @@ public final class ProgressDtos {
     }
 
     public record AchievementView(String id, String name, String description,
-                                  String conditionText, boolean unlocked, String awardedAt) {
+                                  String conditionText, boolean unlocked, int rewardCausality,
+                                  String awardedAt) {
     }
 
     public record AccountProgressView(int causalityPoints, int totalCausalityEarned,
                                       int totalCausalitySpent, long totalRuns,
                                       long completedRuns, long ascendedRuns, long deadRuns,
                                       int highestFloor, int bestScore, int achievementCount,
+                                      int totalAchievementRewards,
                                       List<UnlockView> unlocks, List<AchievementView> achievements,
                                       List<SettlementHistoryView> recentSettlements) {
     }

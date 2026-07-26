@@ -101,11 +101,17 @@ public final class GameDtos {
     public record ConfigStatusView(int activeEvents, int activeEndings, int maxVersion, boolean valid) {
     }
 
+    public record ScoreBreakdownView(int progressBonus, int turnBonus, int healthBonus,
+                                     int spiritBonus, int lifespanBonus, int karmaBonus,
+                                     int spiritStonesBonus, int buildBonus, int eliteBonus,
+                                     int ascensionBonus, int total) {
+    }
+
     public record SettlementView(String runId, String playerName, String origin, String status,
                                  String endingId, String endingTitle, int floorReached, int turn,
                                  int health, int spirit, int lifespan, int karma, int spiritStones,
                                  int activeCards, int eliteCount, int score, int causalityEarned,
-                                 String settledAt) {
+                                 ScoreBreakdownView scoreBreakdown, String settledAt) {
     }
 
     public record LeaderboardEntryView(int rank, String runId, String playerName, String origin,

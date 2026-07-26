@@ -147,7 +147,23 @@ export type Settlement = {
   activeCards: number
   eliteCount: number
   score: number
+  causalityEarned: number
+  scoreBreakdown: ScoreBreakdown
   settledAt: string
+}
+
+export type ScoreBreakdown = {
+  progressBonus: number
+  turnBonus: number
+  healthBonus: number
+  spiritBonus: number
+  lifespanBonus: number
+  karmaBonus: number
+  spiritStonesBonus: number
+  buildBonus: number
+  eliteBonus: number
+  ascensionBonus: number
+  total: number
 }
 
 export type LeaderboardEntry = {
@@ -220,6 +236,7 @@ export type Achievement = {
   description: string
   conditionText: string
   unlocked: boolean
+  rewardCausality: number
   awardedAt: string | null
 }
 
@@ -234,6 +251,7 @@ export type AccountProgress = {
   highestFloor: number
   bestScore: number
   achievementCount: number
+  totalAchievementRewards: number
   unlocks: PermanentUnlock[]
   achievements: Achievement[]
   recentSettlements: SettlementHistory[]

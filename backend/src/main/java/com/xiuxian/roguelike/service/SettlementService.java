@@ -1,6 +1,7 @@
 package com.xiuxian.roguelike.service;
 
 import com.xiuxian.roguelike.api.GameDtos.LeaderboardEntryView;
+import com.xiuxian.roguelike.api.GameDtos.ScoreBreakdownView;
 import com.xiuxian.roguelike.api.GameDtos.SettlementView;
 import com.xiuxian.roguelike.domain.GameRunEntity;
 import com.xiuxian.roguelike.domain.RunMapNodeEntity;
@@ -48,7 +49,7 @@ public class SettlementService {
             int activeCards = buildService.activeCardCount(run.getId());
             String endingId = run.getEndingId() == null ? "fallen_path" : run.getEndingId();
             String endingTitle = endingTitle(endingId);
-            int score = score(run, activeCards, eliteCount);
+            int score = scoreBreakdown(run, activeCards, eliteCount).total();
             int causalityEarned = causalityEarned(run, eliteCount);
             RunSettlementEntity settlement = settlementRepository.save(new RunSettlementEntity(
                     run.getId(), run.getUserId(), run.getCharacterId(), run.getPlayerName(), run.getOrigin(), run.getStatus(), endingId, endingTitle,
@@ -69,7 +70,8 @@ public class SettlementService {
                 settlement.getFloorReached(), settlement.getTurn(), settlement.getHealth(),
                 settlement.getSpirit(), settlement.getLifespan(), settlement.getKarma(),
                 settlement.getSpiritStones(), settlement.getActiveCards(), settlement.getEliteCount(),
-                settlement.getScore(), settlement.getCausalityEarned(), settlement.getSettledAt().toString());
+                settlement.getScore(), settlement.getCausalityEarned(), scoreBreakdown(settlement),
+                settlement.getSettledAt().toString());
     }
 
     public List<LeaderboardEntryView> leaderboard(int requestedLimit) {
@@ -85,18 +87,35 @@ public class SettlementService {
                 }).toList();
     }
 
-    private int score(GameRunEntity run, int activeCards, int eliteCount) {
-        int score = (run.getCurrentFloor() + 1) * 100;
-        score += run.getTurn() * 15;
-        score += run.getHealth();
-        score += run.getSpirit() * 2;
-        score += run.getLifespan();
-        score += Math.max(0, run.getKarma()) * 4;
-        score += run.getSpiritStones();
-        score += activeCards * 25;
-        score += eliteCount * 120;
-        if ("ASCENDED".equals(run.getStatus())) score += 1000;
-        return score;
+    private ScoreBreakdownView scoreBreakdown(GameRunEntity run, int activeCards, int eliteCount) {
+        return scoreBreakdown(run.getCurrentFloor() + 1, run.getTurn(), run.getHealth(), run.getSpirit(),
+                run.getLifespan(), run.getKarma(), run.getSpiritStones(), activeCards, eliteCount, run.getStatus());
+    }
+
+    private ScoreBreakdownView scoreBreakdown(RunSettlementEntity settlement) {
+        return scoreBreakdown(settlement.getFloorReached(), settlement.getTurn(), settlement.getHealth(),
+                settlement.getSpirit(), settlement.getLifespan(), settlement.getKarma(),
+                settlement.getSpiritStones(), settlement.getActiveCards(), settlement.getEliteCount(),
+                settlement.getStatus());
+    }
+
+    private ScoreBreakdownView scoreBreakdown(int floorReached, int turn, int health, int spirit,
+                                              int lifespan, int karma, int spiritStones, int activeCards,
+                                              int eliteCount, String status) {
+        int progressBonus = floorReached * 100;
+        int turnBonus = turn * 15;
+        int healthBonus = health;
+        int spiritBonus = spirit * 2;
+        int lifespanBonus = lifespan;
+        int karmaBonus = Math.max(0, karma) * 4;
+        int spiritStonesBonus = spiritStones;
+        int buildBonus = activeCards * 25;
+        int eliteBonus = eliteCount * 120;
+        int ascensionBonus = "ASCENDED".equals(status) ? 1000 : 0;
+        int total = progressBonus + turnBonus + healthBonus + spiritBonus + lifespanBonus + karmaBonus
+                + spiritStonesBonus + buildBonus + eliteBonus + ascensionBonus;
+        return new ScoreBreakdownView(progressBonus, turnBonus, healthBonus, spiritBonus, lifespanBonus,
+                karmaBonus, spiritStonesBonus, buildBonus, eliteBonus, ascensionBonus, total);
     }
 
     private int causalityEarned(GameRunEntity run, int eliteCount) {

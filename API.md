@@ -145,6 +145,28 @@ V0.8 新增永久解锁：
 
 迁移文件：`database/migrations/20260725_v08_achievements.sql`。
 
+## V0.9 成就奖励与结算明细
+
+成就对象新增：
+
+- `rewardCausality`：首次达成时发放的因果点
+- `awardedAt`：实际达成时间
+
+账号进度新增 `totalAchievementRewards`，表示当前账号已领取的成就因果总额。首次达成时奖励由服务端写入账号余额和 `achievement_record`，重复恢复不会再次发放；迁移前已存在的 V0.8 记录默认奖励为 0，不会被历史迁移重复追发。
+
+结算对象新增 `scoreBreakdown`：
+
+| 字段 | 说明 |
+| --- | --- |
+| `progressBonus` | 抵达层数加分 |
+| `turnBonus` | 回合数加分 |
+| `healthBonus`、`spiritBonus`、`lifespanBonus` | 结算属性加分 |
+| `karmaBonus`、`spiritStonesBonus` | 因果和灵石加分 |
+| `buildBonus` | 有效卡牌加分 |
+| `eliteBonus` | 精英节点加分 |
+| `ascensionBonus` | 飞升额外加分 |
+| `total` | 明细合计，等于结算 `score` |
+
 ## 配置中心接口
 
 所有 `/api/admin/**` 配置中心接口都需要管理员令牌。请求可以使用 `X-Admin-Token`，也可以使用
