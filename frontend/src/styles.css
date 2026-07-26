@@ -169,6 +169,10 @@ h1, h2, p { margin-top: 0; }
 .settlement-score small { color: #aeb9ad; font-size: 11px; }
 .settlement-panel h2 { margin: 8px 0; color: #f0dfbd; }
 .settlement-panel p:last-child { margin: 0; color: #b8c6bd; line-height: 1.7; }
+.score-breakdown { display: grid; grid-template-columns: repeat(7, minmax(52px, 1fr)); gap: 6px; margin-top: 13px; }
+.score-breakdown span { display: flex; min-height: 42px; flex-direction: column; justify-content: center; padding: 5px 6px; border: 1px solid rgba(199, 176, 125, .18); background: rgba(255, 255, 255, .035); text-align: center; }
+.score-breakdown small { color: #81909d; font-family: system-ui, sans-serif; font-size: 9px; }
+.score-breakdown b { margin-top: 3px; color: #e7c477; font-family: system-ui, sans-serif; font-size: 10px; font-weight: 500; }
 .reward-panel { margin-bottom: 18px; padding: clamp(22px, 4vw, 34px); border: 1px solid rgba(216, 173, 105, .35); background: linear-gradient(145deg, rgba(51, 45, 39, .95), rgba(23, 31, 39, .98)); }
 .reward-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .reward-heading h2 { margin: 10px 0 0; color: #f0dfbd; font-size: clamp(24px, 4vw, 33px); }
@@ -222,6 +226,7 @@ h1, h2, p { margin-top: 0; }
   .reward-heading { flex-direction: column; gap: 7px; }.reward-tip { white-space: normal; }
   .upgrade-grid { grid-template-columns: 1fr; }.upgrade-heading, .shop-heading { flex-direction: column; gap: 7px; }.upgrade-stones, .shop-stones { white-space: normal; }
   .combat-heading { flex-direction: column; gap: 12px; }.combat-intent { width: 100%; min-width: 0; }.combat-actions { grid-template-columns: 1fr 1fr; }.combat-action { min-height: 96px; }
+  .settlement-panel { align-items: flex-start; flex-direction: column; }.score-breakdown { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .auth-loading { min-height: 180px; }

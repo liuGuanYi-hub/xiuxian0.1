@@ -31,17 +31,21 @@ public class AchievementRecordEntity {
     @Column(name = "trigger_run_id", length = 36, updatable = false)
     private String triggerRunId;
 
+    @Column(name = "reward_causality", nullable = false, updatable = false)
+    private int rewardCausality;
+
     @Column(name = "awarded_at", nullable = false, updatable = false)
     private LocalDateTime awardedAt;
 
     protected AchievementRecordEntity() {
     }
 
-    public AchievementRecordEntity(String userId, String achievementId, String triggerRunId) {
+    public AchievementRecordEntity(String userId, String achievementId, String triggerRunId, int rewardCausality) {
         this.id = UUID.randomUUID().toString();
         this.userId = userId;
         this.achievementId = achievementId;
         this.triggerRunId = triggerRunId;
+        this.rewardCausality = rewardCausality;
         this.awardedAt = LocalDateTime.now();
     }
 
@@ -55,6 +59,10 @@ public class AchievementRecordEntity {
 
     public String getTriggerRunId() {
         return triggerRunId;
+    }
+
+    public int getRewardCausality() {
+        return rewardCausality;
     }
 
     public LocalDateTime getAwardedAt() {

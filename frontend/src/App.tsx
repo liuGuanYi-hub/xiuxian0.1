@@ -643,6 +643,7 @@ function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgr
         <div><strong>{progress.ascendedRuns}</strong><small>飞升轮回</small></div>
         <div><strong>{progress.deadRuns}</strong><small>道途轮回</small></div>
         <div><strong>{progress.achievementCount}</strong><small>已解锁成就</small></div>
+        <div><strong>{progress.totalAchievementRewards}</strong><small>成就因果收益</small></div>
       </div>
       <div className="unlock-list">
         {progress.unlocks.map((unlock) => (
@@ -658,7 +659,7 @@ function ProgressPanel({ progress, loading, onUnlock }: { progress: AccountProgr
           {progress.achievements.map((achievement) => (
             <article className={`achievement-row ${achievement.unlocked ? 'unlocked' : ''}`} key={achievement.id}>
               <div className="achievement-icon"><Trophy size={14} /></div>
-              <div><strong>{achievement.name}</strong><small>{achievement.description}</small><em>{achievement.conditionText}</em></div>
+              <div><strong>{achievement.name}</strong><small>{achievement.description}</small><em>{achievement.conditionText} · 达成奖励 +{achievement.rewardCausality} 因果</em></div>
               <span>{achievement.unlocked ? '已达成' : '未达成'}</span>
             </article>
           ))}
@@ -815,6 +816,7 @@ function ConfigStatusPanel({ status }: { status: GameRun['configStatus'] }) {
 }
 
 function SettlementPanel({ settlement }: { settlement: NonNullable<GameRun['settlement']> }) {
+  const breakdown = settlement.scoreBreakdown
   return (
     <section className={`settlement-panel ${settlement.status === 'ASCENDED' ? 'ascended' : 'fallen'}`}>
       <div className="settlement-score"><Trophy size={22} /><strong>{settlement.score}</strong><small>本局积分</small></div>
@@ -822,6 +824,15 @@ function SettlementPanel({ settlement }: { settlement: NonNullable<GameRun['sett
         <p className="event-kicker">结算快照 · {settlement.status === 'ASCENDED' ? '飞升' : '道途断绝'}</p>
         <h2>{settlement.endingTitle}</h2>
         <p>抵达第 {settlement.floorReached} 层 · {settlement.turn} 回合 · {settlement.eliteCount} 次精英挑战 · {settlement.activeCards} 张有效卡</p>
+        <div className="score-breakdown" aria-label="本局积分明细">
+          <span><small>进度</small><b>+{breakdown.progressBonus}</b></span>
+          <span><small>回合</small><b>+{breakdown.turnBonus}</b></span>
+          <span><small>属性</small><b>+{breakdown.healthBonus + breakdown.spiritBonus + breakdown.lifespanBonus}</b></span>
+          <span><small>因果/资源</small><b>+{breakdown.karmaBonus + breakdown.spiritStonesBonus}</b></span>
+          <span><small>构筑</small><b>+{breakdown.buildBonus}</b></span>
+          <span><small>精英</small><b>+{breakdown.eliteBonus}</b></span>
+          <span><small>飞升</small><b>+{breakdown.ascensionBonus}</b></span>
+        </div>
       </div>
     </section>
   )

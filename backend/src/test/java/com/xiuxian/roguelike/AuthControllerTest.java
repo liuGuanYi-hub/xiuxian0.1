@@ -118,6 +118,7 @@ class AuthControllerTest {
                 .andReturn().getResponse().getContentAsString());
         String runId = started.get("id").asText();
         assertEquals(1, started.get("accountProgress").get("achievementCount").asInt());
+        assertEquals(2, started.get("accountProgress").get("totalAchievementRewards").asInt());
         GameRunEntity run = gameRunRepository.findById(runId).orElseThrow();
         run.applyChoice(0, 0, 0, 0, "awaiting_node", "炼气二层", "DEAD", "fallen_path");
         gameRunRepository.save(run);
@@ -134,19 +135,24 @@ class AuthControllerTest {
         assertEquals(1, progress.get("highestFloor").asInt());
         assertTrue(progress.get("bestScore").asInt() > 0);
         assertTrue(progress.get("achievementCount").asInt() >= 3);
+        assertEquals(9, progress.get("totalAchievementRewards").asInt());
         assertTrue(achievementUnlocked(progress, "first_step"));
         assertTrue(achievementUnlocked(progress, "first_settlement"));
         assertTrue(achievementUnlocked(progress, "fallen_once"));
         assertTrue(progress.get("recentSettlements").size() >= 1);
 
-        mockMvc.perform(get("/api/game/runs/{id}", runId)
+        JsonNode settledRun = objectMapper.readTree(mockMvc.perform(get("/api/game/runs/{id}", runId)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertEquals(settledRun.get("settlement").get("score").asInt(),
+                settledRun.get("settlement").get("scoreBreakdown").get("total").asInt());
         JsonNode restoredProgress = objectMapper.readTree(mockMvc.perform(get("/api/account/progress")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString());
         assertEquals(progress.get("causalityPoints").asInt(), restoredProgress.get("causalityPoints").asInt());
+        assertEquals(progress.get("totalAchievementRewards").asInt(), restoredProgress.get("totalAchievementRewards").asInt());
 
         JsonNode unlocked = objectMapper.readTree(mockMvc.perform(post("/api/account/unlocks/first_breath")
                         .header("Authorization", "Bearer " + token))

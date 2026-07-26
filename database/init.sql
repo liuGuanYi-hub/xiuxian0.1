@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS achievement_record (
   user_id VARCHAR(36) NOT NULL,
   achievement_id VARCHAR(60) NOT NULL,
   trigger_run_id VARCHAR(36) NULL,
+  reward_causality INT NOT NULL DEFAULT 0,
   awarded_at DATETIME(6) NOT NULL,
   UNIQUE KEY uk_achievement_record_user_achievement (user_id, achievement_id),
   KEY idx_achievement_record_user (user_id, awarded_at)
