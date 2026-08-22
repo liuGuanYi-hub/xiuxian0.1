@@ -4,6 +4,8 @@
 
 开发路线请查看：[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)
 
+开源参考与作品路线图（高星项目对标 + 三阶段路线）：[docs/开源参考与作品路线图.md](./docs/开源参考与作品路线图.md)
+
 ## 技术栈
 
 - 后端：Java 21+、Spring Boot、Spring Data JPA
